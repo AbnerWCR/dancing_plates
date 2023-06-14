@@ -6,7 +6,7 @@ LIBS=-lallegro-5.0.10-monolith-mt
 all: main.exe
 	
 main.exe: main.o
-	$(CC) -O2 -o main.exe maintp.o -L $(PATH_ALLEGRO)\lib $(LIBS)
+	$(CC) -O2 -o main.exe main.o -L $(PATH_ALLEGRO)\lib $(LIBS)
 
 
 main.o: main.c
