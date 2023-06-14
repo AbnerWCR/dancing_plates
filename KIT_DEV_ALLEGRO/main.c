@@ -11,10 +11,14 @@ const int PLAYER_W = 50;
 const int PLAYER_H = 50;
 
 const int SPACE_W = 540;
-const int SPACE_H = 300;
+const int SPACE_H = 340;
 
-void instalar_componentes();
+const int GRASS_W = 540;
+const int GRASS_H = 150;
+
 void destroy_game(ALLEGRO_TIMER *timer, ALLEGRO_DISPLAY *display, ALLEGRO_EVENT_QUEUE *event_queue);
+
+void draw_cenario();
 
 int main(int argc, char **argv){
     ALLEGRO_DISPLAY *display = NULL;
@@ -49,7 +53,11 @@ int main(int argc, char **argv){
 		return -1;
 	}
 
-    instalar_componentes();
+    //instala o teclado
+	if(!al_install_keyboard()) {
+		fprintf(stderr, "failed to install keyboard!\n");
+		return -1;
+	}
 
     //cria a fila de eventos
 	event_queue = al_create_event_queue();
@@ -78,6 +86,7 @@ int main(int argc, char **argv){
 
         //se o tipo de evento for um evento do temporizador, ou seja, se o tempo passou de t para t+1
 		if(ev.type == ALLEGRO_EVENT_TIMER) {
+			draw_cenario();
 
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
@@ -100,16 +109,18 @@ int main(int argc, char **argv){
     destroy_game(timer, display, event_queue);
 }
 
-void instalar_componentes(){
-    //instala o teclado
-	if(!al_install_keyboard()) {
-		fprintf(stderr, "failed to install keyboard!\n");
-		return -1;
-	}
-}
-
 void destroy_game(ALLEGRO_TIMER *timer, ALLEGRO_DISPLAY *display, ALLEGRO_EVENT_QUEUE *event_queue){
     al_destroy_timer(timer);
 	al_destroy_display(display);
 	al_destroy_event_queue(event_queue);
+}
+
+void draw_cenario(){
+	al_clear_to_color(al_map_rgb(0, 0, 0));
+	al_draw_filled_rectangle(0, 0,
+							SCREEN_W, SPACE_H,
+							al_map_rgb(153, 204, 255));
+	al_draw_filled_rectangle(0, SPACE_H,
+							SCREEN_W, SCREEN_H,
+							al_map_rgb(102, 255, 102));
 }
