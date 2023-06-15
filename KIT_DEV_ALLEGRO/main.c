@@ -46,7 +46,7 @@ void draw_cenario();
 void init_plate(Plate *plate);
 void draw_plate(Plate plate);
 int change_plate(Plate *plate);
-void reset_plate(Plate *plate, Player player);
+int reset_plate(Plate *plate, Player player);
 
 void init_player(Player *player);
 void draw_player(Player player);
@@ -149,6 +149,7 @@ int main(int argc, char **argv){
 		else if(ev.type == ALLEGRO_EVENT_KEY_DOWN) {
 			//imprime qual tecla foi
 			printf("\ncodigo tecla: %d", ev.keyboard.keycode);
+			int sucesso = 0;
 			switch (ev.keyboard.keycode) {
 				case ALLEGRO_KEY_A:
 					player.esq = 1;
@@ -163,8 +164,8 @@ int main(int argc, char **argv){
 					player.baixo = 1;
 					break;
 				case ALLEGRO_KEY_SPACE:
-					int sucesso = reset_plate(&plate, player);
-					if (sucesso != 1)
+					sucesso = reset_plate(&plate, player);
+					if (sucesso < 0)
 						return sucesso;
 					break;
 			}
@@ -230,16 +231,13 @@ void draw_plate(Plate plate){
 int change_plate(Plate *plate){
 	if(al_get_timer_count(plate->timer)%(int)FPS == 0){
 			int plate_timer = (int)(al_get_timer_count(plate->timer)/FPS);
-			if (plate_timer < 10){
-				plate->cor = al_map_rgb(102, 0, 204);//ok
-			}
-			else if (plate_timer >= 10 && plate_timer < 15){
+			if (plate_timer >= 10 && plate_timer < 15){
 				plate->cor = al_map_rgb(204, 102, 0);//warning
 			}
 			else if (plate_timer >= 15 && plate_timer < 20){
 				plate->cor = al_map_rgb(153, 0, 0);//danger
 			}
-			else{
+			else if (plate_timer > 20){
 				plate->cor = al_map_rgb(0, 0, 0);//lose
 				return 0;
 			}
@@ -282,7 +280,8 @@ void update_player(Player *player){
 }
 
 int reset_plate(Plate *plate, Player player){
-	if(player.x >= plate->x - 5 && player.x <= plate->x + 5){
+	if(player.x >= plate->x - 10 && player.x <= plate->x + 10){
+		plate->cor = al_map_rgb(102, 0, 204);//ok
 		al_destroy_timer(plate->timer);
 
 		plate->timer = al_create_timer(1.0 / FPS);
@@ -294,13 +293,13 @@ int reset_plate(Plate *plate, Player player){
 		al_start_timer(plate->timer);
 		return 1;
 	}
-	else if(player.y >= plate->y - 5 && player.y <= plate->y + 5){
+	else if(player.y >= plate->y - 10 && player.y <= plate->y + 10){
+		plate->cor = al_map_rgb(102, 0, 204);//ok
 		al_destroy_timer(plate->timer);
 
 		plate->timer = al_create_timer(1.0 / FPS);
 		if(!plate->timer) {
 			fprintf(stderr, "failed to create timer!\n");
-			return -1;
 		}
 
 		al_start_timer(plate->timer);
