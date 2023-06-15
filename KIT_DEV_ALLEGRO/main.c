@@ -1,6 +1,9 @@
 #include <stdio.h>
+#include <string.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
 
 const float FPS = 60;  
 
@@ -40,7 +43,8 @@ typedef struct Player {
 } Player;
 
 void destroy_game(ALLEGRO_TIMER *timer, ALLEGRO_DISPLAY *display, ALLEGRO_EVENT_QUEUE *event_queue);
-
+void draw_score(ALLEGRO_FONT *font, char *text);
+void draw_final_score(ALLEGRO_FONT *font, char *text);
 void draw_cenario();
 
 void init_plate(Plate *plate);
@@ -91,6 +95,32 @@ int main(int argc, char **argv){
 		return -1;
 	}
 
+	//inicializa o modulo allegro que carrega as fontes
+	al_init_font_addon();
+
+	//inicializa o modulo allegro que entende arquivos tff de fontes
+	if(!al_init_ttf_addon()) {
+		fprintf(stderr, "failed to load tff font module!\n");
+		return -1;
+	}
+
+	//inicializa o modulo allegro que entende arquivos tff de fontes
+	if(!al_init_ttf_addon()) {
+		fprintf(stderr, "failed to load tff font module!\n");
+		return -1;
+	}
+	
+	//carrega o arquivo arial.ttf da fonte Arial e define que sera usado o tamanho 32 (segundo parametro)
+    ALLEGRO_FONT *size_32 = al_load_font("arial.ttf", 32, 1);   
+	if(size_32 == NULL) {
+		fprintf(stderr, "font file does not exist or cannot be accessed!\n");
+	}
+
+	ALLEGRO_FONT *size_12 = al_load_font("arial.ttf", 12, 1);   
+	if(size_12 == NULL) {
+		fprintf(stderr, "font file does not exist or cannot be accessed!\n");
+	}
+
     //cria a fila de eventos
 	event_queue = al_create_event_queue();
 	if(!event_queue) {
@@ -127,6 +157,10 @@ int main(int argc, char **argv){
 		if(ev.type == ALLEGRO_EVENT_TIMER) {
 			draw_cenario();
 
+			char *pontuacao = (char*)malloc(10001*sizeof(char));
+			sprintf(pontuacao, "%.2f", player.score);
+			draw_score(size_12, pontuacao);
+
 			draw_plate(plate);
 
 			update_player(&player);
@@ -135,8 +169,21 @@ int main(int argc, char **argv){
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
 			
-			if(al_get_timer_count(timer)%(int)FPS == 0)
+			if(al_get_timer_count(timer)%(int)FPS == 0){
 				printf("\n%d segundos se passaram...", (int)(al_get_timer_count(timer)/FPS));
+				player.score += (0.01*al_get_timer_count(timer)/FPS);
+
+				if (player.score >= 0.1){
+					char *pontuacao_final = (char*)malloc(10001*sizeof(char));
+					sprintf(pontuacao_final, "%.2f", player.score);
+
+					printf("Fim de jogo!");
+					printf("Total de pontos: %.2f", player.score);
+					draw_final_score(size_12, pontuacao);
+					al_rest(10);
+					return 0;
+				}
+			}
 
 			plate.is_up = change_plate(&plate);
 			playing = plate.is_up;
@@ -191,6 +238,34 @@ int main(int argc, char **argv){
 
     //procedimentos de fim de jogo (fecha a tela, limpa a memoria, etc)
     destroy_game(timer, display, event_queue);
+
+	return 0;
+}
+
+void draw_final_score(ALLEGRO_FONT *font, char *score){
+	char *text = (char*)malloc(50*sizeof(char));
+	strcpy(text, "Pontuacao total: ");
+	strcat(text, score);
+	float x_ini = SCREEN_W/2 - 50;
+	float y_ini = SCREEN_H/2 - 50;
+	al_draw_filled_rectangle(x_ini, y_ini,
+							x_ini + 100, y_ini + 100,
+							al_map_rgb(0, 0, 0));
+	al_draw_text(font,
+				al_map_rgb(255, 255, 255), x_ini + 10, y_ini + 10, ALLEGRO_ALIGN_LEFT,
+				text);
+}
+
+void draw_score(ALLEGRO_FONT *font, char *score){
+	char *text = (char*)malloc(50*sizeof(char));
+	strcpy(text, "Score: ");
+	strcat(text, score);
+	al_draw_filled_rectangle(0, 0,
+							100, 30,
+							al_map_rgb(0, 0, 0));
+	al_draw_text(font,
+				al_map_rgb(255, 255, 255), 2, 2, ALLEGRO_ALIGN_LEFT,
+				text);
 }
 
 void destroy_game(ALLEGRO_TIMER *timer, ALLEGRO_DISPLAY *display, ALLEGRO_EVENT_QUEUE *event_queue){
@@ -248,12 +323,13 @@ int change_plate(Plate *plate){
 void init_player(Player *player){
 	player->x = SCREEN_W/2;
 	player->y = SCREEN_H;
-	player->x_vel = 5;
-	player->y_vel = 5;
+	player->x_vel = 2;
+	player->y_vel = 2;
 	player->dir = 0;
 	player->esq = 0;
 	player->cima = 0;
 	player->baixo = 0;
+	player->score = 0;
 	player->cor = al_map_rgb(0, 25, 82);
 }
 
@@ -280,7 +356,9 @@ void update_player(Player *player){
 }
 
 int reset_plate(Plate *plate, Player player){
-	if(player.x >= plate->x - 10 && player.x <= plate->x + 10){
+	if (player.dir != 0 || player.esq != 0 || player.cima != 0 || player.baixo != 0)
+		return 0;
+	if(player.x >= plate->x - 5 && player.x <= plate->x + 5){
 		plate->cor = al_map_rgb(102, 0, 204);//ok
 		al_destroy_timer(plate->timer);
 
@@ -293,7 +371,7 @@ int reset_plate(Plate *plate, Player player){
 		al_start_timer(plate->timer);
 		return 1;
 	}
-	else if(player.y >= plate->y - 10 && player.y <= plate->y + 10){
+	else if(player.y >= plate->y - 5 && player.y <= plate->y + 5){
 		plate->cor = al_map_rgb(102, 0, 204);//ok
 		al_destroy_timer(plate->timer);
 
