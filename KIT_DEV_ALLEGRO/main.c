@@ -1,105 +1,219 @@
 #include <stdio.h>
-#include <string.h>
 #include <allegro5/allegro.h>
-#include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
+#include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_image.h>
+//#include <stdlib.h>
+
+#define NUM_PRATOS 9
 
 const float FPS = 60;  
 
 const int SCREEN_W = 960;
 const int SCREEN_H = 540;
 
-const int SPACE_H = 300;
-
-const int GRASS_H = 250;
-
-const int PLAYER_W = 20;
-const int PLAYER_H = 40;
-
-
-const int PLATE_W = 30;
-const int PLATE_H = 10;
+const int GRASS_H = 150;
 
 const int STICK_W = 5;
-const int STICK_H = 160;
+const int STICK_H = 150;
 
-typedef struct Plate {
+const int PRATO_W = 20;
+const int PRATO_H = 5;
+const int SPACE_BETWEEN = 40;
+
+const float JOGADOR_W = 80;
+const float JOGADOR_H = 40;
+
+typedef struct Jogador {	
 	float x, y;
-	int is_up;
-	ALLEGRO_TIMER *timer;
+	int equilibrando;
+	int mov_esq, mov_dir;
 	ALLEGRO_COLOR cor;
-	ALLEGRO_COLOR cor_stick;
-} Plate;
+	float vel;
+	
+} Jogador;
 
-typedef struct Player {
-	float x, y;
-	float x_vel, y_vel;
-	float score;
-	int dir, esq, cima, baixo;
+typedef struct Prato {
+	float x;
+	
+	/* um valor entre 0 e 1, em que 
+		0 = prato equilibrado e
+	   	1 = prato com maxima energia, prestes a cair */
+	float energia;
+	int tempoParaAparecer;//segundos
 	ALLEGRO_COLOR cor;
-} Player;
+	ALLEGRO_COLOR stick_color;
+	
+} Prato;
 
-void destroy_game(ALLEGRO_TIMER *timer, ALLEGRO_DISPLAY *display, ALLEGRO_EVENT_QUEUE *event_queue);
-void draw_score(ALLEGRO_FONT *font, char *text);
-void draw_cenario();
 
-void init_plate(Plate *plate);
-void draw_plate(Plate plate);
-int change_plate(Plate *plate);
-int reset_plate(Plate *plate, Player player);
+void desenha_cenario() {
+	
+	ALLEGRO_COLOR BKG_COLOR = al_map_rgb(0,76,153);
+	ALLEGRO_COLOR GRASS_COLOR = al_map_rgb(51, 255, 51);
 
-void init_player(Player *player);
-void draw_player(Player player);
-void update_player(Player *player);
+	//desenhando ceu
+	al_draw_filled_rectangle(0, 0,
+							SCREEN_W, SCREEN_H - GRASS_H,
+							BKG_COLOR);	
+	
+	//desenhando grama
+	al_draw_filled_rectangle(0, SCREEN_H - GRASS_H,
+							SCREEN_W, SCREEN_H,
+							GRASS_COLOR);	
+}
 
+void InicializaJogador(Jogador *j) {
+	j->x = SCREEN_W / 2;
+	j->y = (SCREEN_H - GRASS_H / 5) - JOGADOR_H;
+	j->equilibrando = 0;
+	j->cor = al_map_rgb(0, 0, 102);//al_map_rgb(25, 0, 51);
+	j->mov_esq = 0;
+	j->mov_dir = 0;
+	j->vel = 2;
+}
+
+void desenha_jogador(Jogador j) {
+	
+	al_draw_filled_triangle(j.x, j.y, 
+							j.x - JOGADOR_W/2, j.y + JOGADOR_H,
+							j.x + JOGADOR_W/2, j.y + JOGADOR_H,
+							j.cor);	
+	
+}
+
+void atualizaJogador(Jogador *j) {
+	if(j->mov_esq) {
+		if(j->x - j->vel > 0)
+			j->x -= j->vel;
+	}
+	if(j->mov_dir) {
+		if(j->x + j->vel < SCREEN_W)
+			j->x += j->vel;
+	}	
+}
+
+int geraTempoPrato(int i) {
+	return i*1;
+}
+
+void inicializaPratos(Prato *pratos) {	
+	printf("\nIniciando pratos\n");
+	int i;
+	for(i=0; i<NUM_PRATOS; i++) {
+		float x = 0;
+		if(i%2 == 0){
+			x = (SCREEN_W / 2) + (i/2 * (PRATO_W + SPACE_BETWEEN));
+		}
+		else{
+			x = (SCREEN_W / 2) - ((i/2 + 1) * (PRATO_W + SPACE_BETWEEN));
+		}
+		if (x < PRATO_W || x > SCREEN_W - PRATO_W){
+			printf("\nExcede o tamanho da tela!");
+			printf("\nlimite de %d pratos", i-1);
+			break;
+		}
+
+		printf("\nprato %d - x: %f", i, x);
+		printf("\ntempo para aparecer: %d", geraTempoPrato(i));
+		pratos[i].x = x;
+		pratos[i].tempoParaAparecer = geraTempoPrato(i);
+		pratos[i].energia = 0;
+		pratos[i].cor = al_map_rgb(204, 255, 255);
+		pratos[i].stick_color = al_map_rgb(51, 25, 0);
+	}
+	printf("\nFinalizando pratos\n");
+}
+
+void desenhar_pratos(Prato *pratos){
+	
+	int i;
+	for(i = 0; i<NUM_PRATOS; i++){
+		if (pratos[i].tempoParaAparecer > 0)
+			continue;
+
+		al_draw_filled_rectangle(pratos[i].x, (SCREEN_H - GRASS_H / 5) - STICK_H,
+								pratos[i].x + STICK_W, (SCREEN_H - GRASS_H / 5) - JOGADOR_H,
+								pratos[i].stick_color);
+
+		al_draw_filled_ellipse(pratos[i].x, (SCREEN_H - GRASS_H / 5) - STICK_H, 
+								PRATO_W, PRATO_H,
+								pratos[i].cor);
+	}
+}
+
+void status_prato(Prato *pratos){
+	int i;
+	for(i = 0; i < NUM_PRATOS; i++){
+		if(pratos[i].tempoParaAparecer > 0)
+			continue;
+	}
+}
+
+void update_prato(Prato *pratos){
+	int i;
+	for(i = 0; i < NUM_PRATOS; i++){
+		if(pratos[i].tempoParaAparecer <= 0)
+			continue;
+		pratos[i].tempoParaAparecer--;
+	}
+
+	for(i = 0; i < NUM_PRATOS; i++){
+		if(pratos[i].tempoParaAparecer > 0)
+			continue;
+		
+		pratos[i].energia += 0.02;
+	}
+}
+ 
 int main(int argc, char **argv){
-    ALLEGRO_DISPLAY *display = NULL;
-	ALLEGRO_EVENT_QUEUE *event_queue = NULL;
+	
+	ALLEGRO_DISPLAY *display = NULL;	
 	ALLEGRO_TIMER *timer = NULL;
-
-    //----------------------- rotinas de inicializacao ---------------------------------------
-    //inicializa o Allegro
+	ALLEGRO_EVENT_QUEUE *event_queue = NULL;
+	
+	//inicializa o Allegro
 	if(!al_init()) {
 		fprintf(stderr, "failed to initialize allegro!\n");
 		return -1;
 	}
-
+	
+	//cria um temporizador que incrementa uma unidade a cada 1.0/FPS segundos
+    timer = al_create_timer(1.0 / FPS);
+    if(!timer) {
+		fprintf(stderr, "failed to create timer!\n");
+		return -1;
+	}	
+	
     //inicializa o módulo de primitivas do Allegro
     if(!al_init_primitives_addon()){
 		fprintf(stderr, "failed to initialize primitives!\n");
         return -1;
     }	
-
-    //cria um temporizador que incrementa uma unidade a cada 1.0/FPS segundos
-    timer = al_create_timer(1.0 / FPS);
-    if(!timer) {
-		fprintf(stderr, "failed to create timer!\n");
+	
+	//inicializa o modulo que permite carregar imagens no jogo
+	if(!al_init_image_addon()){
+		fprintf(stderr, "failed to initialize image module!\n");
 		return -1;
-	}
-
-    //cria uma tela com dimensoes de SCREEN_W, SCREEN_H pixels
+	}	
+	
+	//cria uma tela com dimensoes de SCREEN_W, SCREEN_H pixels
 	display = al_create_display(SCREEN_W, SCREEN_H);
 	if(!display) {
 		fprintf(stderr, "failed to create display!\n");
 		al_destroy_timer(timer);
 		return -1;
-	}
-
-    //instala o teclado
+	}	
+	
+	//instala o teclado
 	if(!al_install_keyboard()) {
 		fprintf(stderr, "failed to install keyboard!\n");
 		return -1;
 	}
-
+	
 	//inicializa o modulo allegro que carrega as fontes
 	al_init_font_addon();
-
-	//inicializa o modulo allegro que entende arquivos tff de fontes
-	if(!al_init_ttf_addon()) {
-		fprintf(stderr, "failed to load tff font module!\n");
-		return -1;
-	}
 
 	//inicializa o modulo allegro que entende arquivos tff de fontes
 	if(!al_init_ttf_addon()) {
@@ -111,250 +225,100 @@ int main(int argc, char **argv){
     ALLEGRO_FONT *size_32 = al_load_font("arial.ttf", 32, 1);   
 	if(size_32 == NULL) {
 		fprintf(stderr, "font file does not exist or cannot be accessed!\n");
-	}
-
-	ALLEGRO_FONT *size_12 = al_load_font("arial.ttf", 12, 1);   
-	if(size_12 == NULL) {
-		fprintf(stderr, "font file does not exist or cannot be accessed!\n");
-	}
-
-    //cria a fila de eventos
+	}	
+	
+	
+ 	//cria a fila de eventos
 	event_queue = al_create_event_queue();
 	if(!event_queue) {
 		fprintf(stderr, "failed to create event_queue!\n");
 		al_destroy_display(display);
 		al_destroy_timer(timer);
 		return -1;
-	}
-
-    //registra na fila os eventos de tela (ex: clicar no X na janela)
+	}	
+	
+	//registra na fila os eventos de tela (ex: clicar no X na janela)
 	al_register_event_source(event_queue, al_get_display_event_source(display));
 	//registra na fila os eventos de tempo: quando o tempo altera de t para t+1
 	al_register_event_source(event_queue, al_get_timer_event_source(timer));
 	//registra na fila os eventos de teclado (ex: pressionar uma tecla)
-	al_register_event_source(event_queue, al_get_keyboard_event_source());
-
-	Plate plate;
-	init_plate(&plate);
-	al_start_timer(plate.timer);
-
-	Player player;
-	init_player(&player);
-
-    //inicia o temporizador
-	al_start_timer(timer);
-
-    int playing = 1;
+	al_register_event_source(event_queue, al_get_keyboard_event_source()); 	
+	
+	
+	//JOGADOR
+	Jogador jogador;
+	InicializaJogador(&jogador);
+	
+	//PRATOS
+	Prato *pratos = (Prato*)malloc(NUM_PRATOS*sizeof(Prato));
+	inicializaPratos(pratos);
+	
+	//inicia o temporizador
+	al_start_timer(timer);	
+	
+	int i;
+	int playing=1;
 	while(playing) {
-        ALLEGRO_EVENT ev;
+		
+		ALLEGRO_EVENT ev;
 		//espera por um evento e o armazena na variavel de evento ev
 		al_wait_for_event(event_queue, &ev);
-
-        //se o tipo de evento for um evento do temporizador, ou seja, se o tempo passou de t para t+1
+		
+		//se o tipo de evento for um evento do temporizador, ou seja, se o tempo passou de t para t+1
 		if(ev.type == ALLEGRO_EVENT_TIMER) {
-			draw_cenario();
 
-			char *pontuacao = (char*)malloc(10001*sizeof(char));
-			sprintf(pontuacao, "%.2f", player.score);
-			draw_score(size_12, pontuacao);
-
-			draw_plate(plate);
-
-			update_player(&player);
-			draw_player(player);
+		
+			desenha_cenario();
+			
+			atualizaJogador(&jogador);
+			
+			desenha_jogador(jogador);	
+			
+			desenhar_pratos(pratos);
 
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
 			
 			if(al_get_timer_count(timer)%(int)FPS == 0){
 				printf("\n%d segundos se passaram...", (int)(al_get_timer_count(timer)/FPS));
-				player.score += (0.01*al_get_timer_count(timer)/FPS);
+				update_prato(pratos);
 			}
-
-			plate.is_up = change_plate(&plate);
-			playing = plate.is_up;
 		}
-        //se o tipo de evento for o fechamento da tela (clique no x da janela)
+		//se o tipo de evento for o fechamento da tela (clique no x da janela)
 		else if(ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
 			playing = 0;
-		}
-        //se o tipo de evento for um pressionar de uma tecla
+		}		
+		//se o tipo de evento for um pressionar de uma tecla
 		else if(ev.type == ALLEGRO_EVENT_KEY_DOWN) {
 			//imprime qual tecla foi
-			printf("\ncodigo tecla: %d", ev.keyboard.keycode);
-			int sucesso = 0;
-			switch (ev.keyboard.keycode) {
-				case ALLEGRO_KEY_A:
-					player.esq = 1;
-					break;
-				case ALLEGRO_KEY_D:					
-					player.dir = 1;
-					break;
-				case ALLEGRO_KEY_W:
-					player.cima = 1;
-					break;
-				case ALLEGRO_KEY_S:					
-					player.baixo = 1;
-					break;
-				case ALLEGRO_KEY_SPACE:
-					sucesso = reset_plate(&plate, player);
-					if (sucesso < 0)
-						return sucesso;
-					break;
+			//printf("\ncodigo tecla: %d", ev.keyboard.keycode);
+			
+			if(ev.keyboard.keycode == ALLEGRO_KEY_A) {
+				jogador.mov_esq = 1;
 			}
-		}    
-		//se o tipo de evento for um soltar de uma tecla
+			else if(ev.keyboard.keycode == ALLEGRO_KEY_D) {
+				jogador.mov_dir = 1;
+			}			
+		}
+		//se o tipo de evento for um pressionar de uma tecla
 		else if(ev.type == ALLEGRO_EVENT_KEY_UP) {
-			switch (ev.keyboard.keycode) {
-				case ALLEGRO_KEY_A:
-					player.esq = 0;
-					break;
-				case ALLEGRO_KEY_D:					
-					player.dir = 0;
-					break;
-				case ALLEGRO_KEY_W:
-					player.cima = 0;
-					break;
-				case ALLEGRO_KEY_S:					
-					player.baixo = 0;
-					break;
+
+			if(ev.keyboard.keycode == ALLEGRO_KEY_A) {
+				jogador.mov_esq = 0;
 			}
-		}    
-    }
-
-    //procedimentos de fim de jogo (fecha a tela, limpa a memoria, etc)
-    destroy_game(timer, display, event_queue);
-
-	return 0;
-}
-
-void draw_score(ALLEGRO_FONT *font, char *score){
-	char *text = (char*)malloc(50*sizeof(char));
-	strcpy(text, "Score: ");
-	strcat(text, score);
-	al_draw_filled_rectangle(0, 0,
-							100, 30,
-							al_map_rgb(0, 0, 0));
-	al_draw_text(font,
-				al_map_rgb(255, 255, 255), 2, 2, ALLEGRO_ALIGN_LEFT,
-				text);
-}
-
-void destroy_game(ALLEGRO_TIMER *timer, ALLEGRO_DISPLAY *display, ALLEGRO_EVENT_QUEUE *event_queue){
-    al_destroy_timer(timer);
+			else if(ev.keyboard.keycode == ALLEGRO_KEY_D) {
+				jogador.mov_dir = 0;
+			}			
+		}		
+		
+		
+	}
+	
+	free(pratos);
+	al_destroy_timer(timer);
 	al_destroy_display(display);
 	al_destroy_event_queue(event_queue);
-}
-
-void draw_cenario(){
-	al_clear_to_color(al_map_rgb(0, 0, 0));
-	al_draw_filled_rectangle(0, 0,
-							SCREEN_W, SPACE_H,
-							al_map_rgb(102, 178, 255));
-	al_draw_filled_rectangle(0, SPACE_H,
-							SCREEN_W, SCREEN_H,
-							al_map_rgb(51, 255, 51));
-}
-
-void init_plate(Plate *plate){
-	plate->x = SCREEN_W/2;
-	plate->y = SCREEN_H - GRASS_H/2;
-	plate->is_up = 1;
-	plate->timer = al_create_timer(1.0 / FPS);
-	plate->cor = al_map_rgb(102, 0, 204);
-	plate->cor_stick = al_map_rgb(51, 0, 0);
-}
-
-void draw_plate(Plate plate){
-	al_draw_filled_rectangle(plate.x, plate.y, 
-							plate.x - STICK_W, plate.y - STICK_H,
-							plate.cor_stick);
-
-	al_draw_filled_ellipse(plate.x - STICK_W, plate.y - STICK_H, 
-							PLATE_W, PLATE_H,
-   							plate.cor);
-}
-
-int change_plate(Plate *plate){
-	if(al_get_timer_count(plate->timer)%(int)FPS == 0){
-			int plate_timer = (int)(al_get_timer_count(plate->timer)/FPS);
-			if (plate_timer >= 10 && plate_timer < 15){
-				plate->cor = al_map_rgb(204, 102, 0);//warning
-			}
-			else if (plate_timer >= 15 && plate_timer < 20){
-				plate->cor = al_map_rgb(153, 0, 0);//danger
-			}
-			else if (plate_timer > 20){
-				plate->cor = al_map_rgb(0, 0, 0);//lose
-				return 0;
-			}
-		}
-	return 1;
-}
-
-void init_player(Player *player){
-	player->x = SCREEN_W/2;
-	player->y = SCREEN_H;
-	player->x_vel = 2;
-	player->y_vel = 2;
-	player->dir = 0;
-	player->esq = 0;
-	player->cima = 0;
-	player->baixo = 0;
-	player->score = 0;
-	player->cor = al_map_rgb(0, 25, 82);
-}
-
-void draw_player(Player player){
-	al_draw_filled_rectangle(player.x, player.y, 
-							player.x - PLAYER_W, player.y - PLAYER_H,
-							player.cor);
-}
-
-void update_player(Player *player){
-	if(player->dir && (player->x + player->x_vel <= SCREEN_W)){
-		player->x += player->x_vel;
-	} 
-	if(player->esq && (player->x - player->x_vel >= PLAYER_W)){
-		player->x -= player->x_vel;
-	}
-
-	if(player->cima && (player->y - player->y_vel - PLAYER_H >= SPACE_H)){
-		player->y -= player->y_vel;
-	}
-	if(player->baixo && (player->y + player->y_vel <= SCREEN_H)){
-		player->y += player->y_vel;
-	}
-}
-
-int reset_plate(Plate *plate, Player player){
-	if (player.dir != 0 || player.esq != 0 || player.cima != 0 || player.baixo != 0)
-		return 0;
-	if(player.x >= plate->x - 5 && player.x <= plate->x + 5){
-		plate->cor = al_map_rgb(102, 0, 204);//ok
-		al_destroy_timer(plate->timer);
-
-		plate->timer = al_create_timer(1.0 / FPS);
-		if(!plate->timer) {
-			fprintf(stderr, "failed to create timer!\n");
-			return -1;
-		}
-
-		al_start_timer(plate->timer);
-		return 1;
-	}
-	else if(player.y >= plate->y - 5 && player.y <= plate->y + 5){
-		plate->cor = al_map_rgb(102, 0, 204);//ok
-		al_destroy_timer(plate->timer);
-
-		plate->timer = al_create_timer(1.0 / FPS);
-		if(!plate->timer) {
-			fprintf(stderr, "failed to create timer!\n");
-		}
-
-		al_start_timer(plate->timer);
-		return 1;
-	}
-
+	
+ 
 	return 0;
 }
