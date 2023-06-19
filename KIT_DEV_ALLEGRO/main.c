@@ -10,10 +10,8 @@ const float FPS = 60;
 const int SCREEN_W = 960;
 const int SCREEN_H = 540;
 
-const int SPACE_W = 540;
 const int SPACE_H = 300;
 
-const int GRASS_W = 540;
 const int GRASS_H = 250;
 
 const int PLAYER_W = 20;
