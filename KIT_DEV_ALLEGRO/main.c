@@ -95,7 +95,7 @@ void atualizaJogador(Jogador *j) {
 }
 
 int geraTempoPrato(int i) {
-	return i*1;
+	return i*6;
 }
 
 void inicializaPratos(Prato *pratos) {	
@@ -148,10 +148,23 @@ void status_prato(Prato *pratos){
 	for(i = 0; i < NUM_PRATOS; i++){
 		if(pratos[i].tempoParaAparecer > 0)
 			continue;
+
+		if (pratos[i].energia >= 0.3 && pratos[i].energia < 0.5){
+				pratos[i].cor = al_map_rgb(255, 102, 102);//warning
+		}
+		if (pratos[i].energia >= 0.5 && pratos[i].energia < 0.8){
+				pratos[i].cor = al_map_rgb(255, 51, 51);//warning
+		}
+		else if (pratos[i].energia >= 0.8 && pratos[i].energia < 1){
+			pratos[i].cor = al_map_rgb(153, 0, 0);//danger
+		}
+		else if (pratos[i].energia >= 1){
+			pratos[i].cor = al_map_rgb(0, 0, 0);//lose
+		}
 	}
 }
 
-void update_prato(Prato *pratos){
+void update_prato(Prato *pratos, int segundos){
 	int i;
 	for(i = 0; i < NUM_PRATOS; i++){
 		if(pratos[i].tempoParaAparecer <= 0)
@@ -162,9 +175,21 @@ void update_prato(Prato *pratos){
 	for(i = 0; i < NUM_PRATOS; i++){
 		if(pratos[i].tempoParaAparecer > 0)
 			continue;
-		
-		pratos[i].energia += 0.02;
+
+		float pontos = 0;
+
+		if(segundos <= 10)
+			pontos = (float)0.01;
+		else if(segundos > 10 && segundos <= 20)
+			pontos = (float)0.02;
+		else if(segundos > 20 && segundos <= 30)
+			pontos = (float)0.03;
+		else if(segundos > 30)
+			pontos = (float)0.05;
+
+		pratos[i].energia += pontos;
 	}
+	status_prato(pratos);
 }
  
 int main(int argc, char **argv){
@@ -281,7 +306,8 @@ int main(int argc, char **argv){
 			
 			if(al_get_timer_count(timer)%(int)FPS == 0){
 				printf("\n%d segundos se passaram...", (int)(al_get_timer_count(timer)/FPS));
-				update_prato(pratos);
+				int segundos = (int)(al_get_timer_count(timer)/FPS);
+				update_prato(pratos, segundos);
 			}
 		}
 		//se o tipo de evento for o fechamento da tela (clique no x da janela)
