@@ -31,6 +31,7 @@ typedef struct Jogador {
 	int mov_esq, mov_dir;
 	ALLEGRO_COLOR cor;
 	float vel;
+	float score;
 	
 } Jogador;
 
@@ -72,6 +73,7 @@ void InicializaJogador(Jogador *j) {
 	j->mov_esq = 0;
 	j->mov_dir = 0;
 	j->vel = 2;
+	j->score = (float)0;
 }
 
 void desenha_jogador(Jogador j) {
@@ -167,6 +169,21 @@ void status_prato(Prato *pratos){
 	}
 }
 
+float get_pontos(int segundos){
+	float pontos = 0;
+
+	if(segundos <= 20)
+		pontos = (float)0.016;
+	else if(segundos > 20 && segundos <= 40)
+		pontos = (float)0.02;
+	else if(segundos > 40 && segundos <= 80)
+		pontos = (float)0.03;
+	else if(segundos > 80)
+		pontos = (float)0.5;
+
+	return pontos;
+}
+
 void update_prato(Prato *pratos, int segundos){
 	int i;
 	for(i = 0; i < NUM_PRATOS; i++){
@@ -177,32 +194,43 @@ void update_prato(Prato *pratos, int segundos){
 
 	for(i = 0; i < NUM_PRATOS; i++){
 		if(pratos[i].tempoParaAparecer > 0)
-			continue;
+			continue;	
 
-		float pontos = 0;
-
-		if(segundos <= 20)
-			pontos = (float)0.01;
-		else if(segundos > 20 && segundos <= 40)
-			pontos = (float)0.02;
-		else if(segundos > 40)
-			pontos = (float)0.03;
-
-		pratos[i].energia += pontos;
+		pratos[i].energia += get_pontos(segundos);
 	}
 	status_prato(pratos);
+}
+
+void add_points_jogador(Jogador *j, int segundos){
+	j->score += get_pontos(segundos);
+}
+
+void set_default_stick_color(Prato *pratos){
+	ALLEGRO_COLOR default_color_stick = al_map_rgb(51, 25, 0);
+	int i;
+	for(i = 0; i < NUM_PRATOS; i++){
+		pratos[i].stick_color = default_color_stick;
+	}
 }
 
 void reset_plates(Prato *pratos, Jogador j){
 	if(j.mov_dir != 0 || j.mov_esq != 0)
 		return;
 	
+	ALLEGRO_COLOR original_color_stick = al_map_rgb(51, 25, 0);
 	int i;
 	for(i = 0; i < NUM_PRATOS; i++){
 		if(j.x >= pratos[i].x - 5 && j.x <= pratos[i].x + 5 && pratos[i].energia < 1){
 			pratos[i].energia = 0;
+
+			ALLEGRO_COLOR success = al_map_rgb(102, 0, 204);
+			pratos[i].stick_color = success;
 		}			
 	}
+	desenhar_pratos(pratos);
+	al_flip_display();
+	set_default_stick_color(pratos);
+	al_rest(0.5);
 }
 
 int check_plates(Prato *pratos){
@@ -213,6 +241,23 @@ int check_plates(Prato *pratos){
 		}
 	}
 	return 1;
+}
+
+void draw_score(ALLEGRO_FONT *font, Jogador jogador){
+	char *score = (char*)malloc(10001*sizeof(char));
+	sprintf(score, "%.3f", jogador.score);
+
+	char *text = (char*)malloc(50*sizeof(char));
+	strcpy(text, "Score: ");
+	strcat(text, score);
+	al_draw_filled_rectangle(0, 0,
+							100, 30,
+							al_map_rgb(0, 0, 0));
+	al_draw_text(font,
+				al_map_rgb(255, 255, 255), 2, 2, ALLEGRO_ALIGN_LEFT,
+				text);
+	free(score);
+	free(text);
 }
  
 int main(int argc, char **argv){
@@ -274,7 +319,11 @@ int main(int argc, char **argv){
 	if(size_32 == NULL) {
 		fprintf(stderr, "font file does not exist or cannot be accessed!\n");
 	}	
-	
+
+	ALLEGRO_FONT *size_12 = al_load_font("arial.ttf", 12, 1);   
+	if(size_12 == NULL) {
+		fprintf(stderr, "font file does not exist or cannot be accessed!\n");
+	}	
 	
  	//cria a fila de eventos
 	event_queue = al_create_event_queue();
@@ -313,25 +362,26 @@ int main(int argc, char **argv){
 		al_wait_for_event(event_queue, &ev);
 		
 		//se o tipo de evento for um evento do temporizador, ou seja, se o tempo passou de t para t+1
-		if(ev.type == ALLEGRO_EVENT_TIMER) {
-
-		
-			desenha_cenario();			
-			atualizaJogador(&jogador);			
-			desenha_jogador(jogador);			
-			desenhar_pratos(pratos);
-			
+		if(ev.type == ALLEGRO_EVENT_TIMER) {					
 			int status = 0;
 			status = check_plates(pratos);
 			if (status == 0)
 				break;
 
+			desenha_cenario();		
+			draw_score(size_12, jogador);	
+			atualizaJogador(&jogador);			
+			desenha_jogador(jogador);			
+			desenhar_pratos(pratos);
+
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
 			
+			int segundos = (int)(al_get_timer_count(timer)/FPS);
+			add_points_jogador(&jogador, segundos);
+
 			if(al_get_timer_count(timer)%(int)FPS == 0){
-				printf("\n%d segundos se passaram...", (int)(al_get_timer_count(timer)/FPS));
-				int segundos = (int)(al_get_timer_count(timer)/FPS);
+				printf("\n%d segundos se passaram...", segundos);
 				update_prato(pratos, segundos);
 			}
 		}
