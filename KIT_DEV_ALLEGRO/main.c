@@ -149,16 +149,19 @@ void status_prato(Prato *pratos){
 		if(pratos[i].tempoParaAparecer > 0)
 			continue;
 
-		if (pratos[i].energia >= 0.3 && pratos[i].energia < 0.5){
+		if(pratos[i].energia < 0.3){
+			pratos[i].cor = al_map_rgb(204, 255, 255);
+		} 
+		if(pratos[i].energia >= 0.3 && pratos[i].energia < 0.5){
 				pratos[i].cor = al_map_rgb(255, 102, 102);//warning
 		}
-		if (pratos[i].energia >= 0.5 && pratos[i].energia < 0.8){
-				pratos[i].cor = al_map_rgb(255, 51, 51);//warning
+		if(pratos[i].energia >= 0.5 && pratos[i].energia < 0.8){
+				pratos[i].cor = al_map_rgb(255, 51, 51);//warning 2
 		}
-		else if (pratos[i].energia >= 0.8 && pratos[i].energia < 1){
+		if(pratos[i].energia >= 0.8 && pratos[i].energia < 1){
 			pratos[i].cor = al_map_rgb(153, 0, 0);//danger
 		}
-		else if (pratos[i].energia >= 1){
+		if(pratos[i].energia >= 1){
 			pratos[i].cor = al_map_rgb(0, 0, 0);//lose
 		}
 	}
@@ -178,18 +181,38 @@ void update_prato(Prato *pratos, int segundos){
 
 		float pontos = 0;
 
-		if(segundos <= 10)
+		if(segundos <= 20)
 			pontos = (float)0.01;
-		else if(segundos > 10 && segundos <= 20)
+		else if(segundos > 20 && segundos <= 40)
 			pontos = (float)0.02;
-		else if(segundos > 20 && segundos <= 30)
+		else if(segundos > 40)
 			pontos = (float)0.03;
-		else if(segundos > 30)
-			pontos = (float)0.05;
 
 		pratos[i].energia += pontos;
 	}
 	status_prato(pratos);
+}
+
+void reset_plates(Prato *pratos, Jogador j){
+	if(j.mov_dir != 0 || j.mov_esq != 0)
+		return;
+	
+	int i;
+	for(i = 0; i < NUM_PRATOS; i++){
+		if(j.x >= pratos[i].x - 5 && j.x <= pratos[i].x + 5 && pratos[i].energia < 1){
+			pratos[i].energia = 0;
+		}			
+	}
+}
+
+int check_plates(Prato *pratos){
+	int i;
+	for(i = 0; i < NUM_PRATOS; i++){
+		if(pratos[i].energia >= 1){
+			return 0;
+		}
+	}
+	return 1;
 }
  
 int main(int argc, char **argv){
@@ -293,13 +316,15 @@ int main(int argc, char **argv){
 		if(ev.type == ALLEGRO_EVENT_TIMER) {
 
 		
-			desenha_cenario();
-			
-			atualizaJogador(&jogador);
-			
-			desenha_jogador(jogador);	
-			
+			desenha_cenario();			
+			atualizaJogador(&jogador);			
+			desenha_jogador(jogador);			
 			desenhar_pratos(pratos);
+			
+			int status = 0;
+			status = check_plates(pratos);
+			if (status == 0)
+				break;
 
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
@@ -316,24 +341,28 @@ int main(int argc, char **argv){
 		}		
 		//se o tipo de evento for um pressionar de uma tecla
 		else if(ev.type == ALLEGRO_EVENT_KEY_DOWN) {
-			//imprime qual tecla foi
-			//printf("\ncodigo tecla: %d", ev.keyboard.keycode);
-			
-			if(ev.keyboard.keycode == ALLEGRO_KEY_A) {
-				jogador.mov_esq = 1;
-			}
-			else if(ev.keyboard.keycode == ALLEGRO_KEY_D) {
-				jogador.mov_dir = 1;
+			switch (ev.keyboard.keycode){
+				case ALLEGRO_KEY_A:
+					jogador.mov_esq = 1;
+					break;
+				case ALLEGRO_KEY_D:
+					jogador.mov_dir = 1;
+					break;
+				case ALLEGRO_KEY_SPACE:
+					printf("\nTecla: %d pressionada", ev.keyboard.keycode);
+					reset_plates(pratos, jogador);
+					break;
 			}			
 		}
 		//se o tipo de evento for um pressionar de uma tecla
 		else if(ev.type == ALLEGRO_EVENT_KEY_UP) {
-
-			if(ev.keyboard.keycode == ALLEGRO_KEY_A) {
-				jogador.mov_esq = 0;
-			}
-			else if(ev.keyboard.keycode == ALLEGRO_KEY_D) {
-				jogador.mov_dir = 0;
+			switch (ev.keyboard.keycode){
+				case ALLEGRO_KEY_A:
+					jogador.mov_esq = 0;
+					break;
+				case ALLEGRO_KEY_D:
+					jogador.mov_dir = 0;
+					break;
 			}			
 		}		
 		
