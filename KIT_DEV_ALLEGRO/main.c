@@ -31,10 +31,7 @@ typedef struct Jogador {
 	int mov_esq, mov_dir;
 	ALLEGRO_COLOR cor;
 	float vel;
-<<<<<<< HEAD
-=======
 	float score;
->>>>>>> event_plates
 	
 } Jogador;
 
@@ -76,10 +73,7 @@ void InicializaJogador(Jogador *j) {
 	j->mov_esq = 0;
 	j->mov_dir = 0;
 	j->vel = 2;
-<<<<<<< HEAD
-=======
 	j->score = (float)0;
->>>>>>> event_plates
 }
 
 void desenha_jogador(Jogador j) {
@@ -157,18 +151,6 @@ void status_prato(Prato *pratos){
 		if(pratos[i].tempoParaAparecer > 0)
 			continue;
 
-<<<<<<< HEAD
-		if (pratos[i].energia >= 0.3 && pratos[i].energia < 0.5){
-				pratos[i].cor = al_map_rgb(255, 102, 102);//warning
-		}
-		if (pratos[i].energia >= 0.5 && pratos[i].energia < 0.8){
-				pratos[i].cor = al_map_rgb(255, 51, 51);//warning
-		}
-		else if (pratos[i].energia >= 0.8 && pratos[i].energia < 1){
-			pratos[i].cor = al_map_rgb(153, 0, 0);//danger
-		}
-		else if (pratos[i].energia >= 1){
-=======
 		if(pratos[i].energia < 0.3){
 			pratos[i].cor = al_map_rgb(204, 255, 255);
 		} 
@@ -182,14 +164,11 @@ void status_prato(Prato *pratos){
 			pratos[i].cor = al_map_rgb(153, 0, 0);//danger
 		}
 		if(pratos[i].energia >= 1){
->>>>>>> event_plates
 			pratos[i].cor = al_map_rgb(0, 0, 0);//lose
 		}
 	}
 }
 
-<<<<<<< HEAD
-=======
 float get_pontos(int segundos){
 	float pontos = 0;
 
@@ -205,7 +184,6 @@ float get_pontos(int segundos){
 	return pontos;
 }
 
->>>>>>> event_plates
 void update_prato(Prato *pratos, int segundos){
 	int i;
 	for(i = 0; i < NUM_PRATOS; i++){
@@ -216,25 +194,6 @@ void update_prato(Prato *pratos, int segundos){
 
 	for(i = 0; i < NUM_PRATOS; i++){
 		if(pratos[i].tempoParaAparecer > 0)
-<<<<<<< HEAD
-			continue;
-
-		float pontos = 0;
-
-		if(segundos <= 10)
-			pontos = (float)0.01;
-		else if(segundos > 10 && segundos <= 20)
-			pontos = (float)0.02;
-		else if(segundos > 20 && segundos <= 30)
-			pontos = (float)0.03;
-		else if(segundos > 30)
-			pontos = (float)0.05;
-
-		pratos[i].energia += pontos;
-	}
-	status_prato(pratos);
-}
-=======
 			continue;	
 
 		pratos[i].energia += get_pontos(segundos);
@@ -300,7 +259,6 @@ void draw_score(ALLEGRO_FONT *font, Jogador jogador){
 	free(score);
 	free(text);
 }
->>>>>>> event_plates
  
 int main(int argc, char **argv){
 	
@@ -361,15 +319,11 @@ int main(int argc, char **argv){
 	if(size_32 == NULL) {
 		fprintf(stderr, "font file does not exist or cannot be accessed!\n");
 	}	
-<<<<<<< HEAD
-	
-=======
 
 	ALLEGRO_FONT *size_12 = al_load_font("arial.ttf", 12, 1);   
 	if(size_12 == NULL) {
 		fprintf(stderr, "font file does not exist or cannot be accessed!\n");
 	}	
->>>>>>> event_plates
 	
  	//cria a fila de eventos
 	event_queue = al_create_event_queue();
@@ -408,17 +362,6 @@ int main(int argc, char **argv){
 		al_wait_for_event(event_queue, &ev);
 		
 		//se o tipo de evento for um evento do temporizador, ou seja, se o tempo passou de t para t+1
-<<<<<<< HEAD
-		if(ev.type == ALLEGRO_EVENT_TIMER) {
-
-		
-			desenha_cenario();
-			
-			atualizaJogador(&jogador);
-			
-			desenha_jogador(jogador);	
-			
-=======
 		if(ev.type == ALLEGRO_EVENT_TIMER) {					
 			int status = 0;
 			status = check_plates(pratos);
@@ -429,23 +372,16 @@ int main(int argc, char **argv){
 			draw_score(size_12, jogador);	
 			atualizaJogador(&jogador);			
 			desenha_jogador(jogador);			
->>>>>>> event_plates
 			desenhar_pratos(pratos);
 
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
 			
-<<<<<<< HEAD
-			if(al_get_timer_count(timer)%(int)FPS == 0){
-				printf("\n%d segundos se passaram...", (int)(al_get_timer_count(timer)/FPS));
-				int segundos = (int)(al_get_timer_count(timer)/FPS);
-=======
 			int segundos = (int)(al_get_timer_count(timer)/FPS);
 			add_points_jogador(&jogador, segundos);
 
 			if(al_get_timer_count(timer)%(int)FPS == 0){
 				printf("\n%d segundos se passaram...", segundos);
->>>>>>> event_plates
 				update_prato(pratos, segundos);
 			}
 		}
@@ -455,16 +391,6 @@ int main(int argc, char **argv){
 		}		
 		//se o tipo de evento for um pressionar de uma tecla
 		else if(ev.type == ALLEGRO_EVENT_KEY_DOWN) {
-<<<<<<< HEAD
-			//imprime qual tecla foi
-			//printf("\ncodigo tecla: %d", ev.keyboard.keycode);
-			
-			if(ev.keyboard.keycode == ALLEGRO_KEY_A) {
-				jogador.mov_esq = 1;
-			}
-			else if(ev.keyboard.keycode == ALLEGRO_KEY_D) {
-				jogador.mov_dir = 1;
-=======
 			switch (ev.keyboard.keycode){
 				case ALLEGRO_KEY_A:
 					jogador.mov_esq = 1;
@@ -476,19 +402,10 @@ int main(int argc, char **argv){
 					printf("\nTecla: %d pressionada", ev.keyboard.keycode);
 					reset_plates(pratos, jogador);
 					break;
->>>>>>> event_plates
 			}			
 		}
 		//se o tipo de evento for um pressionar de uma tecla
 		else if(ev.type == ALLEGRO_EVENT_KEY_UP) {
-<<<<<<< HEAD
-
-			if(ev.keyboard.keycode == ALLEGRO_KEY_A) {
-				jogador.mov_esq = 0;
-			}
-			else if(ev.keyboard.keycode == ALLEGRO_KEY_D) {
-				jogador.mov_dir = 0;
-=======
 			switch (ev.keyboard.keycode){
 				case ALLEGRO_KEY_A:
 					jogador.mov_esq = 0;
@@ -496,7 +413,6 @@ int main(int argc, char **argv){
 				case ALLEGRO_KEY_D:
 					jogador.mov_dir = 0;
 					break;
->>>>>>> event_plates
 			}			
 		}		
 		
