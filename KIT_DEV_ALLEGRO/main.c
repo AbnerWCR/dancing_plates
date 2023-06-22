@@ -259,6 +259,36 @@ void draw_score(ALLEGRO_FONT *font, Jogador jogador){
 	free(score);
 	free(text);
 }
+
+void set_record(Jogador jogador){
+	FILE *fp;
+	fp = fopen("recorde_jogador.txt", "a+");
+	if(fp == NULL){
+		printf("Erro ao abrir arquivo!");
+		return;
+	}
+
+	float value = (float)0;
+	float record = (float)0;
+	while((fscanf(fp, "%f", &value)) != EOF){
+		printf("\nScore recorde: %f", value);
+		if (record < value)
+			record = value;
+
+		if(feof(fp) || record == 0)
+			break;
+	}
+	printf("\nrecorde: %.3f", record);
+
+	if(jogador.score < record)
+		return;
+
+	char *score = (char*)malloc(10001*sizeof(char));
+	sprintf(score, "%.3f\n", jogador.score);
+	fputs(score, fp);
+	
+	fclose(fp);
+}
  
 int main(int argc, char **argv){
 	
@@ -419,6 +449,7 @@ int main(int argc, char **argv){
 		
 	}
 	
+	set_record(jogador);
 	free(pratos);
 	al_destroy_timer(timer);
 	al_destroy_display(display);
