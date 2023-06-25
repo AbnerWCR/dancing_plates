@@ -16,7 +16,7 @@ const int SCREEN_H = 540;
 const int GRASS_H = 150;
 
 const int STICK_W = 5;
-const int STICK_H = 150;
+const int STICK_H = 200;
 
 const int PRATO_W = 20;
 const int PRATO_H = 5;
@@ -36,7 +36,7 @@ typedef struct Jogador {
 } Jogador;
 
 typedef struct Prato {
-	float x;
+	float x, y;
 	
 	/* um valor entre 0 e 1, em que 
 		0 = prato equilibrado e
@@ -120,6 +120,7 @@ void inicializaPratos(Prato *pratos) {
 		printf("\nprato %d - x: %f", i, x);
 		printf("\ntempo para aparecer: %d", geraTempoPrato(i));
 		pratos[i].x = x;
+		pratos[i].y = (SCREEN_H - GRASS_H / 5) - STICK_H;
 		pratos[i].tempoParaAparecer = geraTempoPrato(i);
 		pratos[i].energia = 0;
 		pratos[i].cor = al_map_rgb(204, 255, 255);
@@ -139,7 +140,7 @@ void desenhar_pratos(Prato *pratos){
 								pratos[i].x + STICK_W, (SCREEN_H - GRASS_H / 5) - JOGADOR_H,
 								pratos[i].stick_color);
 
-		al_draw_filled_ellipse(pratos[i].x, (SCREEN_H - GRASS_H / 5) - STICK_H, 
+		al_draw_filled_ellipse(pratos[i].x, pratos[i].y, 
 								PRATO_W, PRATO_H,
 								pratos[i].cor);
 	}
@@ -165,6 +166,7 @@ void status_prato(Prato *pratos){
 		}
 		if(pratos[i].energia >= 1){
 			pratos[i].cor = al_map_rgb(0, 0, 0);//lose
+			pratos[i].y =  (SCREEN_H - GRASS_H / 5) - JOGADOR_H;
 		}
 	}
 }
@@ -471,8 +473,9 @@ int main(int argc, char **argv){
 			printf("\nInicio jogo");
 			int status = 0;
 			status = check_plates(pratos);
-			if (status == 0)
-				break;
+			if (status == 0){
+				end_game = 0;
+			}
 
 			desenha_cenario();		
 			draw_score(size_12, jogador);	
