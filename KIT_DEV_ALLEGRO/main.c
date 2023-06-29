@@ -27,7 +27,7 @@ const float JOGADOR_H = 40;
 
 typedef struct Jogador {	
 	float x, y;
-	int equilibrando;
+	//int equilibrando;
 	int mov_esq, mov_dir;
 	ALLEGRO_COLOR cor;
 	float vel;
@@ -49,7 +49,7 @@ typedef struct Prato {
 } Prato;
 
 
-void desenha_cenario() {
+void desenhaCenario() {
 	
 	ALLEGRO_COLOR BKG_COLOR = al_map_rgb(0,76,153);
 	ALLEGRO_COLOR GRASS_COLOR = al_map_rgb(51, 255, 51);
@@ -65,10 +65,10 @@ void desenha_cenario() {
 							GRASS_COLOR);	
 }
 
-void InicializaJogador(Jogador *j) {
+void inicializaJogador(Jogador *j) {
 	j->x = SCREEN_W / 2;
 	j->y = (SCREEN_H - GRASS_H / 5) - JOGADOR_H;
-	j->equilibrando = 0;
+	//j->equilibrando = 0;
 	j->cor = al_map_rgb(0, 0, 102);//al_map_rgb(25, 0, 51);
 	j->mov_esq = 0;
 	j->mov_dir = 0;
@@ -76,7 +76,7 @@ void InicializaJogador(Jogador *j) {
 	j->score = (float)0;
 }
 
-void desenha_jogador(Jogador j) {
+void desenhaJogador(Jogador j) {
 	
 	al_draw_filled_triangle(j.x, j.y, 
 							j.x - JOGADOR_W/2, j.y + JOGADOR_H,
@@ -129,7 +129,7 @@ void inicializaPratos(Prato *pratos) {
 	printf("\nFinalizando pratos\n");
 }
 
-void desenhar_pratos(Prato *pratos){
+void desenharPratos(Prato *pratos){
 	
 	int i;
 	for(i = 0; i<NUM_PRATOS; i++){
@@ -146,7 +146,7 @@ void desenhar_pratos(Prato *pratos){
 	}
 }
 
-void status_prato(Prato *pratos){
+void statusPrato(Prato *pratos){
 	int i;
 	for(i = 0; i < NUM_PRATOS; i++){
 		if(pratos[i].tempoParaAparecer > 0)
@@ -171,7 +171,7 @@ void status_prato(Prato *pratos){
 	}
 }
 
-float get_pontos(int segundos){
+float getPontos(int segundos){
 	float pontos = 0;
 
 	if(segundos <= 20)
@@ -180,13 +180,15 @@ float get_pontos(int segundos){
 		pontos = (float)0.02;
 	else if(segundos > 40 && segundos <= 80)
 		pontos = (float)0.03;
-	else if(segundos > 80)
-		pontos = (float)0.5;
+	else if(segundos > 80 && segundos <= 180)
+		pontos = (float)0.05;
+	else if(segundos > 180)
+		pontos = (float)0.07;
 
 	return pontos;
 }
 
-void update_prato(Prato *pratos, int segundos){
+void updatePrato(Prato *pratos, int segundos){
 	int i;
 	for(i = 0; i < NUM_PRATOS; i++){
 		if(pratos[i].tempoParaAparecer <= 0)
@@ -198,16 +200,16 @@ void update_prato(Prato *pratos, int segundos){
 		if(pratos[i].tempoParaAparecer > 0)
 			continue;	
 
-		pratos[i].energia += get_pontos(segundos);
+		pratos[i].energia += getPontos(segundos);
 	}
-	status_prato(pratos);
+	statusPrato(pratos);
 }
 
-void add_points_jogador(Jogador *j, int segundos){
-	j->score += get_pontos(segundos);
+void addPointsJogador(Jogador *j, int segundos){
+	j->score += getPontos(segundos);
 }
 
-void set_default_stick_color(Prato *pratos){
+void setDefaultStickColor(Prato *pratos){
 	ALLEGRO_COLOR default_color_stick = al_map_rgb(51, 25, 0);
 	int i;
 	for(i = 0; i < NUM_PRATOS; i++){
@@ -215,7 +217,7 @@ void set_default_stick_color(Prato *pratos){
 	}
 }
 
-void reset_plates(Prato *pratos, Jogador j){
+void resetPlates(Prato *pratos, Jogador j){
 	if(j.mov_dir != 0 || j.mov_esq != 0)
 		return;
 	
@@ -229,13 +231,13 @@ void reset_plates(Prato *pratos, Jogador j){
 			pratos[i].stick_color = success;
 		}			
 	}
-	desenhar_pratos(pratos);
+	desenharPratos(pratos);
 	al_flip_display();
-	set_default_stick_color(pratos);
+	setDefaultStickColor(pratos);
 	al_rest(0.5);
 }
 
-int check_plates(Prato *pratos){
+int checkPlates(Prato *pratos){
 	int i;
 	for(i = 0; i < NUM_PRATOS; i++){
 		if(pratos[i].energia >= 1){
@@ -245,7 +247,7 @@ int check_plates(Prato *pratos){
 	return 1;
 }
 
-void draw_score(ALLEGRO_FONT *font, Jogador jogador){
+void drawScore(ALLEGRO_FONT *font, Jogador jogador){
 	char *score = (char*)malloc(10001*sizeof(char));
 	sprintf(score, "%.3f", jogador.score);
 
@@ -262,7 +264,7 @@ void draw_score(ALLEGRO_FONT *font, Jogador jogador){
 	free(text);
 }
 
-void draw_final_screen(ALLEGRO_FONT *font, Jogador jogador, int is_recorde){
+void drawFinalScreen(ALLEGRO_FONT *font, Jogador jogador, int is_recorde){
 	char *score = (char*)malloc(10001*sizeof(char));
 	sprintf(score, "%.3f", jogador.score);
 	char *text = (char*)malloc(50*sizeof(char));
@@ -309,7 +311,7 @@ int decisao(int x, int y){
 	return 2;
 }
 
-int set_record(Jogador jogador){
+int setRecorde(Jogador jogador){
 	FILE *fp;
 	fp = fopen("recorde_jogador.txt", "a+");
 	if(fp == NULL){
@@ -381,6 +383,8 @@ int main(int argc, char **argv){
 		al_destroy_timer(timer);
 		return -1;
 	}	
+
+	al_set_window_title(display, "Dancing Plates");
 	
 	//instala o teclado
 	if(!al_install_keyboard()) {
@@ -437,7 +441,7 @@ int main(int argc, char **argv){
 	
 	//JOGADOR
 	Jogador jogador;
-	InicializaJogador(&jogador);
+	inicializaJogador(&jogador);
 	
 	//PRATOS
 	Prato *pratos = (Prato*)malloc(NUM_PRATOS*sizeof(Prato));
@@ -463,8 +467,8 @@ int main(int argc, char **argv){
 				al_stop_timer(timer);
 
 				int is_recorde = 0;
-				is_recorde = set_record(jogador);
-				draw_final_screen(size_14, jogador, is_recorde);
+				is_recorde = setRecorde(jogador);
+				drawFinalScreen(size_14, jogador, is_recorde);
 				al_flip_display();
 				
 				continue;
@@ -472,26 +476,26 @@ int main(int argc, char **argv){
 
 			printf("\nInicio jogo");
 			int status = 0;
-			status = check_plates(pratos);
+			status = checkPlates(pratos);
 			if (status == 0){
 				end_game = 0;
 			}
 
-			desenha_cenario();		
-			draw_score(size_12, jogador);	
+			desenhaCenario();		
+			drawScore(size_12, jogador);	
 			atualizaJogador(&jogador);			
-			desenha_jogador(jogador);			
-			desenhar_pratos(pratos);
+			desenhaJogador(jogador);			
+			desenharPratos(pratos);
 
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
 			
 			int segundos = (int)(al_get_timer_count(timer)/FPS);
-			add_points_jogador(&jogador, segundos);
+			addPointsJogador(&jogador, segundos);
 
 			if(al_get_timer_count(timer)%(int)FPS == 0){
 				printf("\n%d segundos se passaram...", segundos);
-				update_prato(pratos, segundos);
+				updatePrato(pratos, segundos);
 			}
 		}
 		//se o tipo de evento for o fechamento da tela (clique no x da janela)
@@ -512,7 +516,7 @@ int main(int argc, char **argv){
 					break;
 				case ALLEGRO_KEY_SPACE:
 					printf("\nTecla: %d pressionada", ev.keyboard.keycode);
-					reset_plates(pratos, jogador);
+					resetPlates(pratos, jogador);
 					break;
 			}			
 		}
@@ -541,7 +545,7 @@ int main(int argc, char **argv){
 				playing = j_decisao;
 				end_game = j_decisao;
 
-				InicializaJogador(&jogador);
+				inicializaJogador(&jogador);
 	
 				//PRATOS
 				pratos = (Prato*)malloc(NUM_PRATOS*sizeof(Prato));
