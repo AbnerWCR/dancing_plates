@@ -27,7 +27,7 @@ const float JOGADOR_H = 40;
 
 typedef struct Jogador {	
 	float x, y;
-	//int equilibrando;
+	int equilibrando;
 	int mov_esq, mov_dir;
 	ALLEGRO_COLOR cor;
 	float vel;
@@ -68,7 +68,7 @@ void desenhaCenario() {
 void inicializaJogador(Jogador *j) {
 	j->x = SCREEN_W / 2;
 	j->y = (SCREEN_H - GRASS_H / 5) - JOGADOR_H;
-	//j->equilibrando = 0;
+	j->equilibrando = 0;
 	j->cor = al_map_rgb(0, 0, 102);//al_map_rgb(25, 0, 51);
 	j->mov_esq = 0;
 	j->mov_dir = 0;
@@ -200,7 +200,10 @@ void updatePrato(Prato *pratos, int segundos){
 		if(pratos[i].tempoParaAparecer > 0)
 			continue;	
 
-		pratos[i].energia += getPontos(segundos);
+		if(pratos[i].energia + getPontos(segundos) > 1)
+			pratos[i].energia = 1;
+		else
+			pratos[i].energia += getPontos(segundos);
 	}
 	statusPrato(pratos);
 }
@@ -218,14 +221,17 @@ void setDefaultStickColor(Prato *pratos){
 }
 
 void resetPlates(Prato *pratos, Jogador j){
-	if(j.mov_dir != 0 || j.mov_esq != 0)
+	if(j.mov_dir != 0 || j.mov_esq != 0 || j.equilibrando == 0)
 		return;
 	
 	ALLEGRO_COLOR original_color_stick = al_map_rgb(51, 25, 0);
 	int i;
 	for(i = 0; i < NUM_PRATOS; i++){
 		if(j.x >= pratos[i].x - 5 && j.x <= pratos[i].x + 5 && pratos[i].energia < 1){
-			pratos[i].energia = 0;
+			if(pratos[i].energia - 0.25 < 0)
+				pratos[i].energia = 0;
+			else 
+				pratos[i].energia -= 0.25;
 
 			ALLEGRO_COLOR success = al_map_rgb(102, 0, 204);
 			pratos[i].stick_color = success;
@@ -406,12 +412,6 @@ int main(int argc, char **argv){
 		return -1;
 	}
 	
-	//carrega o arquivo arial.ttf da fonte Arial e define que sera usado o tamanho 32 (segundo parametro)
-    ALLEGRO_FONT *size_32 = al_load_font("arial.ttf", 32, 1);   
-	if(size_32 == NULL) {
-		fprintf(stderr, "font file does not exist or cannot be accessed!\n");
-	}
-
 	ALLEGRO_FONT *size_14 = al_load_font("arial.ttf", 14, 1);   
 	if(size_14 == NULL) {
 		fprintf(stderr, "font file does not exist or cannot be accessed!\n");
@@ -460,7 +460,6 @@ int main(int argc, char **argv){
 		
 		//se o tipo de evento for um evento do temporizador, ou seja, se o tempo passou de t para t+1
 		if(ev.type == ALLEGRO_EVENT_TIMER && end_game != 2) {
-			printf("\nCaiu event timer");
 			if(end_game == 0){
 				printf("\nCaiu no end_game 0");
 				free(pratos);
@@ -474,7 +473,6 @@ int main(int argc, char **argv){
 				continue;
 			}		
 
-			printf("\nInicio jogo");
 			int status = 0;
 			status = checkPlates(pratos);
 			if (status == 0){
@@ -484,7 +482,8 @@ int main(int argc, char **argv){
 			desenhaCenario();		
 			drawScore(size_12, jogador);	
 			atualizaJogador(&jogador);			
-			desenhaJogador(jogador);			
+			desenhaJogador(jogador);
+			resetPlates(pratos, jogador);	
 			desenharPratos(pratos);
 
 			//atualiza a tela (quando houver algo para mostrar)
@@ -514,9 +513,8 @@ int main(int argc, char **argv){
 				case ALLEGRO_KEY_D:
 					jogador.mov_dir = 1;
 					break;
-				case ALLEGRO_KEY_SPACE:
-					printf("\nTecla: %d pressionada", ev.keyboard.keycode);
-					resetPlates(pratos, jogador);
+				case ALLEGRO_KEY_SPACE:					
+					jogador.equilibrando = 1;
 					break;
 			}			
 		}
@@ -528,6 +526,9 @@ int main(int argc, char **argv){
 					break;
 				case ALLEGRO_KEY_D:
 					jogador.mov_dir = 0;
+					break;
+				case ALLEGRO_KEY_SPACE:
+					jogador.equilibrando = 0;
 					break;
 			}			
 		}	
