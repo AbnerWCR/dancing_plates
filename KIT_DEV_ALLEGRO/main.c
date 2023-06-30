@@ -3,7 +3,6 @@
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
 #include <allegro5/allegro_primitives.h>
-#include <allegro5/allegro_image.h>
 //#include <stdlib.h>
 
 #define NUM_PLATES 9
@@ -81,7 +80,7 @@ int checkPlates(Plate *plates);
 
 void drawScore(ALLEGRO_FONT *font, Player player);
 
-void drawFinalScreen(ALLEGRO_FONT *font, Player player, int is_record);
+void drawFinalScreen(ALLEGRO_FONT *font, Player player, int is_record, int is_winner);
 
 int decision(int x, int y);
 
@@ -111,12 +110,6 @@ int main(int argc, char **argv){
 		fprintf(stderr, "failed to initialize primitives!\n");
         return -1;
     }	
-	
-	//inicializa o modulo que permite carregar imagens no jogo
-	if(!al_init_image_addon()){
-		fprintf(stderr, "failed to initialize image module!\n");
-		return -1;
-	}	
 	
 	//cria uma tela com dimensoes de SCREEN_W, SCREEN_H pixels
 	display = al_create_display(SCREEN_W, SCREEN_H);
@@ -221,19 +214,27 @@ int main(int argc, char **argv){
 	int end_game = 1;
 	int i;
 	while(playing) {	
+		if(player.score >= 500)
+			end_game = 0;
+
 		//espera por um evento e o armazena na variavel de evento ev
 		al_wait_for_event(event_queue, &ev);
 		
 		//se o tipo de evento for um evento do temporizador, ou seja, se o tempo passou de t para t+1
 		if(ev.type == ALLEGRO_EVENT_TIMER && end_game != 2) {
 			if(end_game == 0){
+				int is_winner = 0;
+
+				if(player.score >= 500)
+					is_winner = 1;
+
 				printf("\nCaiu no end_game 0");
 				free(plates);
 				al_stop_timer(timer);
 
 				int is_record = 0;
 				is_record = setRecord(player);
-				drawFinalScreen(size_14, player, is_record);
+				drawFinalScreen(size_14, player, is_record, is_winner);
 				al_flip_display();
 				
 				continue;
@@ -332,7 +333,8 @@ int main(int argc, char **argv){
 				al_start_timer(timer);
 			}
 			else{
-				playing = 0;
+				printf("\nEncerrou jogo!");
+				break;
 			}
 		}
 	}
@@ -375,7 +377,7 @@ float getPoints(int seconds){
 	else if(seconds > 180 && seconds <= 200)
 		points = (float)0.07;
 	else if(seconds > 200)
-		points = (float)0.09;
+		points = (float)0.073;
 
 	return points;
 }
@@ -610,12 +612,16 @@ void setDefaultStickColor(Plate *plates){
 	}
 }
 
-void drawFinalScreen(ALLEGRO_FONT *font, Player player, int is_record){
+void drawFinalScreen(ALLEGRO_FONT *font, Player player, int is_record, int is_winner){
 	char *score = (char*)malloc(10001*sizeof(char));
 	sprintf(score, "%.3f", player.score);
 	char *text = (char*)malloc(50*sizeof(char));
 
-	if(is_record == 1){			
+	if(is_winner == 1){
+		strcpy(text, "Você é o campeão: ");
+		strcat(text, score);
+	}
+	else if(is_record == 1){			
 		strcpy(text, "Novo recorde: ");
 		strcat(text, score);
 	}
