@@ -51,6 +51,8 @@ typedef struct Plate {
 
 void drawBackdrop();
 
+int menu(ALLEGRO_FONT *font);
+
 void initPlayer(Player *player);
 
 void drawPlayer(Player player);
@@ -83,7 +85,7 @@ void drawFinalScreen(ALLEGRO_FONT *font, Player player, int is_record);
 
 int decision(int x, int y);
 
-int setRecorde(Player player);
+int setRecord(Player player);
  
 int main(int argc, char **argv){
 	
@@ -160,8 +162,11 @@ int main(int argc, char **argv){
 	event_queue = al_create_event_queue();
 	if(!event_queue) {
 		fprintf(stderr, "failed to create event_queue!\n");
-		al_destroy_display(display);
 		al_destroy_timer(timer);
+		al_destroy_display(display);
+		al_destroy_event_queue(event_queue);
+		al_destroy_font(size_12);
+		al_destroy_font(size_14);
 		return -1;
 	}	
 	
@@ -172,23 +177,50 @@ int main(int argc, char **argv){
 	//registra na fila os eventos de teclado (ex: pressionar uma tecla)
 	al_register_event_source(event_queue, al_get_keyboard_event_source()); 	
 	al_register_event_source(event_queue, al_get_mouse_event_source());
+
+	
+	ALLEGRO_EVENT ev;
+	
+	int playing = 1;
+	int init_game = 2;
+	while(init_game == 2){
+		drawBackdrop();	
+		menu(size_14);
+		//atualiza a tela (quando houver algo para mostrar)
+		al_flip_display();
+
+		//espera por um evento e o armazena na variavel de evento ev
+		al_wait_for_event(event_queue, &ev);
+		//se o tipo de evento for o fechamento da tela (clique no x da janela)
+		if(ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+			init_game = 0;	
+			playing = 0;		
+		}	
+		// click mouse
+		else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN){
+			init_game = decision(ev.mouse.x, ev.mouse.y);
+			playing = init_game;
+		}
+	}
 	
 	//PLAYER
-	Player player;
-	initPlayer(&player);
+	Player player;	
 	
 	//PLATES
-	Plate *plates = (Plate*)malloc(NUM_PLATES*sizeof(Plate));
-	initPlates(plates);
+	Plate *plates;	
+
+	if (playing == 1){
+		plates = (Plate*)malloc(NUM_PLATES*sizeof(Plate));
+		initPlayer(&player);
+		initPlates(plates);
+	}
 
 	//inicia o temporizador
 	al_start_timer(timer);	
 
 	int end_game = 1;
 	int i;
-	int playing = 1;
-	while(playing) {		
-		ALLEGRO_EVENT ev;
+	while(playing) {	
 		//espera por um evento e o armazena na variavel de evento ev
 		al_wait_for_event(event_queue, &ev);
 		
@@ -200,7 +232,7 @@ int main(int argc, char **argv){
 				al_stop_timer(timer);
 
 				int is_record = 0;
-				is_record = setRecorde(player);
+				is_record = setRecord(player);
 				drawFinalScreen(size_14, player, is_record);
 				al_flip_display();
 				
@@ -304,10 +336,13 @@ int main(int argc, char **argv){
 			}
 		}
 	}
+
 	free(plates);
 	al_destroy_timer(timer);
 	al_destroy_display(display);
 	al_destroy_event_queue(event_queue);
+	al_destroy_font(size_12);
+	al_destroy_font(size_14);
  
 	return 0;
 }
@@ -355,7 +390,7 @@ int decision(int x, int y){
 	return 2;
 }
 
-int setRecorde(Player player){
+int setRecord(Player player){
 	FILE *fp;
 	fp = fopen("recorde_jogador.txt", "a+");
 	if(fp == NULL){
@@ -610,4 +645,52 @@ void drawFinalScreen(ALLEGRO_FONT *font, Player player, int is_record){
 				"Jogar novamente");
 	free(text);
 	free(score);
+}
+
+int menu(ALLEGRO_FONT *font){
+	FILE *fp;
+	fp = fopen("recorde_jogador.txt", "a+");
+	if(fp == NULL){
+		printf("Erro ao abrir arquivo!");
+		return 0;
+	}
+
+	float value = (float)0;
+	float record = (float)0;
+	while((fscanf(fp, "%f", &value)) != EOF){
+		if (record < value)
+			record = value;
+
+		if(feof(fp) || record == 0)
+			break;
+	}
+
+	fclose(fp);
+
+	char *text = (char*)malloc(10001*sizeof(char));
+	sprintf(text, "Recorde atual: %.3f", record);
+
+	al_draw_filled_rectangle(SCREEN_W/2 - 150, SCREEN_H/2 - 60,
+							SCREEN_W/2 + 150, SCREEN_H/2 + 60,
+							al_map_rgb(0, 0, 0));
+	al_draw_text(font,
+				al_map_rgb(255, 255, 255), SCREEN_W/2 - 100, SCREEN_H/2 - 30, ALLEGRO_ALIGN_LEFT,
+				text);
+
+	al_draw_filled_rectangle(SCREEN_W/2 - 145, SCREEN_H/2 + 20,
+							SCREEN_W/2 - 5, SCREEN_H/2 + 45,
+							al_map_rgb(255, 255, 255));
+	al_draw_text(font,
+				al_map_rgb(0, 0, 0), SCREEN_W/2 - 140, SCREEN_H/2 + 25, ALLEGRO_ALIGN_LEFT,
+				"Sair");
+
+	al_draw_filled_rectangle(SCREEN_W/2+5, SCREEN_H/2 + 20,
+							SCREEN_W/2 + 140, SCREEN_H/2 + 45,
+							al_map_rgb(255, 255, 255));
+	al_draw_text(font,
+				al_map_rgb(0, 0, 0), SCREEN_W/2 + 10, SCREEN_H/2 + 25, ALLEGRO_ALIGN_LEFT,
+				"Iniciar Jogo");
+	free(text);
+
+	return 1;
 }
