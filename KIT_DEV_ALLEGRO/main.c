@@ -337,8 +337,10 @@ float getPoints(int seconds){
 		points = (float)0.03;
 	else if(seconds > 80 && seconds <= 180)
 		points = (float)0.05;
-	else if(seconds > 180)
+	else if(seconds > 180 && seconds <= 200)
 		points = (float)0.07;
+	else if(seconds > 200)
+		points = (float)0.09;
 
 	return points;
 }
