@@ -49,304 +49,41 @@ typedef struct Plate {
 	
 } Plate;
 
+void drawBackdrop();
 
-void drawBackdrop() {
-	
-	ALLEGRO_COLOR BKG_COLOR = al_map_rgb(0,76,153);
-	ALLEGRO_COLOR GRASS_COLOR = al_map_rgb(51, 255, 51);
+void initPlayer(Player *player);
 
-	//desenhando ceu
-	al_draw_filled_rectangle(0, 0,
-							SCREEN_W, SCREEN_H - GRASS_H,
-							BKG_COLOR);	
-	
-	//desenhando grama
-	al_draw_filled_rectangle(0, SCREEN_H - GRASS_H,
-							SCREEN_W, SCREEN_H,
-							GRASS_COLOR);	
-}
+void drawPlayer(Player player);
 
-void initPlayer(Player *player) {
-	player->x = SCREEN_W / 2;
-	player->y = (SCREEN_H - GRASS_H / 5) - PLAYER_H;
-	player->balancing = 0;
-	player->color = al_map_rgb(0, 0, 102);//al_map_rgb(25, 0, 51);
-	player->mov_l = 0;
-	player->mov_r = 0;
-	player->speed = 2;
-	player->score = (float)0;
-}
+void updatePlayer(Player *player);
 
-void drawPlayer(Player player) {
-	
-	al_draw_filled_triangle(player.x, player.y, 
-							player.x - PLAYER_W/2, player.y + PLAYER_H,
-							player.x + PLAYER_W/2, player.y + PLAYER_H,
-							player.color);	
-	
-}
+int getPlateTime(int i);
 
-void updatePlayer(Player *player) {
-	if(player->mov_l) {
-		if(player->x - player->speed > 0)
-			player->x -= player->speed;
-	}
-	if(player->mov_r) {
-		if(player->x + player->speed < SCREEN_W)
-			player->x += player->speed;
-	}	
-}
+void initPlates(Plate *plates);
 
-int getPlateTime(int i) {
-	return i*6;
-}
+void drawPlates(Plate *plates);
 
-void initPlates(Plate *plates) {	
-	printf("\nIniciando pratos\n");
-	int i;
-	for(i=0; i<NUM_PLATES; i++) {
-		float x = 0;
-		if(i%2 == 0){
-			x = (SCREEN_W / 2) + (i/2 * (PLATE_W + SPACE_BETWEEN));
-		}
-		else{
-			x = (SCREEN_W / 2) - ((i/2 + 1) * (PLATE_W + SPACE_BETWEEN));
-		}
-		if (x < PLATE_W || x > SCREEN_W - PLATE_W){
-			printf("\nExcede o tamanho da tela!");
-			printf("\nlimite de %d pratos", i-1);
-			break;
-		}
+void statusPlate(Plate *plates);
 
-		printf("\nprato %d - x: %f", i, x);
-		printf("\ntempo para aparecer: %d", getPlateTime(i));
-		plates[i].x = x;
-		plates[i].y = (SCREEN_H - GRASS_H / 5) - STICK_H;
-		plates[i].time_to_show = getPlateTime(i);
-		plates[i].energy = 0;
-		plates[i].color = al_map_rgb(204, 255, 255);
-		plates[i].stick_color = al_map_rgb(51, 25, 0);
-	}
-	printf("\nFinalizando pratos\n");
-}
+float getPoints(int seconds);
 
-void drawPlates(Plate *plates){
-	
-	int i;
-	for(i = 0; i<NUM_PLATES; i++){
-		if (plates[i].time_to_show > 0)
-			continue;
+void updatePlate(Plate *plates, int seconds);
 
-		al_draw_filled_rectangle(plates[i].x - STICK_W/2, (SCREEN_H - GRASS_H / 5) - STICK_H,
-								plates[i].x + STICK_W/2, (SCREEN_H - GRASS_H / 5) - PLAYER_H,
-								plates[i].stick_color);
+void addPointsPlayer(Player *player, int seconds);
 
-		al_draw_filled_ellipse(plates[i].x, plates[i].y, 
-								PLATE_W, PLATE_H,
-								plates[i].color);
-	}
-}
+void setDefaultStickColor(Plate *plates);
 
-void statusPlate(Plate *plates){
-	int i;
-	for(i = 0; i < NUM_PLATES; i++){
-		if(plates[i].time_to_show > 0)
-			continue;
+void resetPlates(Plate *plates, Player player);
 
-		if(plates[i].energy < 0.3){
-			plates[i].color = al_map_rgb(204, 255, 255);
-		} 
-		if(plates[i].energy >= 0.3 && plates[i].energy < 0.5){
-				plates[i].color = al_map_rgb(255, 102, 102);//warning
-		}
-		if(plates[i].energy >= 0.5 && plates[i].energy < 0.8){
-				plates[i].color = al_map_rgb(255, 51, 51);//warning 2
-		}
-		if(plates[i].energy >= 0.8 && plates[i].energy < 1){
-			plates[i].color = al_map_rgb(153, 0, 0);//danger
-		}
-		if(plates[i].energy >= 1){
-			plates[i].color = al_map_rgb(0, 0, 0);//lose
-			plates[i].y =  (SCREEN_H - GRASS_H / 5) - PLAYER_H;
-		}
-	}
-}
+int checkPlates(Plate *plates);
 
-float getPoints(int seconds){
-	float points = 0;
+void drawScore(ALLEGRO_FONT *font, Player player);
 
-	if(seconds <= 20)
-		points = (float)0.016;
-	else if(seconds > 20 && seconds <= 40)
-		points = (float)0.02;
-	else if(seconds > 40 && seconds <= 80)
-		points = (float)0.03;
-	else if(seconds > 80 && seconds <= 180)
-		points = (float)0.05;
-	else if(seconds > 180)
-		points = (float)0.07;
+void drawFinalScreen(ALLEGRO_FONT *font, Player player, int is_record);
 
-	return points;
-}
+int decision(int x, int y);
 
-void updatePlate(Plate *plates, int seconds){
-	int i;
-	for(i = 0; i < NUM_PLATES; i++){
-		if(plates[i].time_to_show <= 0)
-			continue;
-		plates[i].time_to_show--;
-	}
-
-	for(i = 0; i < NUM_PLATES; i++){
-		if(plates[i].time_to_show > 0)
-			continue;	
-
-		if(plates[i].energy + getPoints(seconds) > 1)
-			plates[i].energy = 1;
-		else
-			plates[i].energy += getPoints(seconds);
-	}
-	statusPlate(plates);
-}
-
-void addPointsPlayer(Player *player, int seconds){
-	player->score += getPoints(seconds);
-}
-
-void setDefaultStickColor(Plate *plates){
-	ALLEGRO_COLOR default_color_stick = al_map_rgb(51, 25, 0);
-	int i;
-	for(i = 0; i < NUM_PLATES; i++){
-		plates[i].stick_color = default_color_stick;
-	}
-}
-
-void resetPlates(Plate *plates, Player player){
-	if(player.mov_r != 0 || player.mov_l != 0 || player.balancing == 0)
-		return;
-	
-	ALLEGRO_COLOR original_color_stick = al_map_rgb(51, 25, 0);
-	int i;
-	for(i = 0; i < NUM_PLATES; i++){
-		if(player.x >= plates[i].x - 5 && player.x <= plates[i].x + 5 && plates[i].energy < 1){
-			if(plates[i].energy - (float)RECOVER_ENERGY < 0)
-				plates[i].energy = 0;
-			else 
-				plates[i].energy -= (float)RECOVER_ENERGY;
-
-			ALLEGRO_COLOR success = al_map_rgb(102, 0, 204);
-			plates[i].stick_color = success;
-		}
-	}	
-}
-
-int checkPlates(Plate *plates){
-	int i;
-	for(i = 0; i < NUM_PLATES; i++){
-		if(plates[i].energy >= 1){
-			return 0;
-		}
-	}
-	return 1;
-}
-
-void drawScore(ALLEGRO_FONT *font, Player player){
-	char *score = (char*)malloc(10001*sizeof(char));
-	sprintf(score, "%.3f", player.score);
-
-	char *text = (char*)malloc(50*sizeof(char));
-	strcpy(text, "Score: ");
-	strcat(text, score);
-	al_draw_filled_rectangle(0, 0,
-							100, 30,
-							al_map_rgb(0, 0, 0));
-	al_draw_text(font,
-				al_map_rgb(255, 255, 255), 2, 2, ALLEGRO_ALIGN_LEFT,
-				text);
-	free(score);
-	free(text);
-}
-
-void drawFinalScreen(ALLEGRO_FONT *font, Player player, int is_record){
-	char *score = (char*)malloc(10001*sizeof(char));
-	sprintf(score, "%.3f", player.score);
-	char *text = (char*)malloc(50*sizeof(char));
-
-	if(is_record == 1){			
-		strcpy(text, "Novo recorde: ");
-		strcat(text, score);
-	}
-	else{
-		strcpy(text, "Score final: ");
-		strcat(text, score);
-	}
-	al_draw_filled_rectangle(SCREEN_W/2 - 150, SCREEN_H/2 - 60,
-							SCREEN_W/2 + 150, SCREEN_H/2 + 60,
-							al_map_rgb(0, 0, 0));
-	al_draw_text(font,
-				al_map_rgb(255, 255, 255), SCREEN_W/2 - 100, SCREEN_H/2 - 30, ALLEGRO_ALIGN_LEFT,
-				text);
-
-	al_draw_filled_rectangle(SCREEN_W/2 - 145, SCREEN_H/2 + 20,
-							SCREEN_W/2 - 5, SCREEN_H/2 + 45,
-							al_map_rgb(255, 255, 255));
-	al_draw_text(font,
-				al_map_rgb(0, 0, 0), SCREEN_W/2 - 140, SCREEN_H/2 + 25, ALLEGRO_ALIGN_LEFT,
-				"Sair");
-
-	al_draw_filled_rectangle(SCREEN_W/2+5, SCREEN_H/2 + 20,
-							SCREEN_W/2 + 140, SCREEN_H/2 + 45,
-							al_map_rgb(255, 255, 255));
-	al_draw_text(font,
-				al_map_rgb(0, 0, 0), SCREEN_W/2 + 10, SCREEN_H/2 + 25, ALLEGRO_ALIGN_LEFT,
-				"Jogar novamente");
-	free(text);
-	free(score);
-}
-
-int decision(int x, int y){
-	if(!(y >= SCREEN_H/2 + 20 && y <= SCREEN_H/2 + 45))
-		return 2;
-	if(x >= SCREEN_W/2 - 145 && x <= SCREEN_W/2 - 5)
-		return 0;
-	if(x >= SCREEN_W/2+5 && x <= SCREEN_W/2 + 140)
-		return 1;
-	return 2;
-}
-
-int setRecorde(Player player){
-	FILE *fp;
-	fp = fopen("recorde_jogador.txt", "a+");
-	if(fp == NULL){
-		printf("Erro ao abrir arquivo!");
-		return;
-	}
-
-	float value = (float)0;
-	float record = (float)0;
-	while((fscanf(fp, "%f", &value)) != EOF){
-		printf("\nScore recorde: %f", value);
-		if (record < value)
-			record = value;
-
-		if(feof(fp) || record == 0)
-			break;
-	}
-	printf("\nrecorde: %.3f", record);
-
-	if(player.score < record){
-		fclose(fp);
-		return 0;
-	}
-
-	char *score = (char*)malloc(10001*sizeof(char));
-	sprintf(score, "%.3f\n", player.score);
-	fputs(score, fp);
-	
-	free(score);
-	fclose(fp);
-	return 1;
-}
+int setRecorde(Player player);
  
 int main(int argc, char **argv){
 	
@@ -532,9 +269,7 @@ int main(int argc, char **argv){
 		}	
 		// click mouse
 		else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && end_game != 1){
-			printf("\nmouse down on: x: %d, y: %d", ev.mouse.x, ev.mouse.y);
 			int player_decision = decision(ev.mouse.x, ev.mouse.y);
-			printf("\nDecisao: %d", player_decision);
 
 			if(player_decision == 2){
 				end_game = player_decision;
@@ -563,7 +298,6 @@ int main(int argc, char **argv){
 
 				//inicia o temporizador
 				al_start_timer(timer);
-				printf("\nJogar novamente, sucesso");	
 			}
 			else{
 				playing = 0;
@@ -576,4 +310,302 @@ int main(int argc, char **argv){
 	al_destroy_event_queue(event_queue);
  
 	return 0;
+}
+
+int getPlateTime(int i) {
+	return i*6;
+}
+
+int checkPlates(Plate *plates){
+	int i;
+	for(i = 0; i < NUM_PLATES; i++){
+		if(plates[i].energy >= 1){
+			return 0;
+		}
+	}
+	return 1;
+}
+
+float getPoints(int seconds){
+	float points = 0;
+
+	if(seconds <= 20)
+		points = (float)0.016;
+	else if(seconds > 20 && seconds <= 40)
+		points = (float)0.02;
+	else if(seconds > 40 && seconds <= 80)
+		points = (float)0.03;
+	else if(seconds > 80 && seconds <= 180)
+		points = (float)0.05;
+	else if(seconds > 180)
+		points = (float)0.07;
+
+	return points;
+}
+
+int decision(int x, int y){
+	if(!(y >= SCREEN_H/2 + 20 && y <= SCREEN_H/2 + 45))
+		return 2;
+	if(x >= SCREEN_W/2 - 145 && x <= SCREEN_W/2 - 5)
+		return 0;
+	if(x >= SCREEN_W/2+5 && x <= SCREEN_W/2 + 140)
+		return 1;
+	return 2;
+}
+
+int setRecorde(Player player){
+	FILE *fp;
+	fp = fopen("recorde_jogador.txt", "a+");
+	if(fp == NULL){
+		printf("Erro ao abrir arquivo!");
+		return;
+	}
+
+	float value = (float)0;
+	float record = (float)0;
+	while((fscanf(fp, "%f", &value)) != EOF){
+		printf("\nScore recorde: %f", value);
+		if (record < value)
+			record = value;
+
+		if(feof(fp) || record == 0)
+			break;
+	}
+	printf("\nrecorde: %.3f", record);
+
+	if(player.score < record){
+		fclose(fp);
+		return 0;
+	}
+
+	char *score = (char*)malloc(10001*sizeof(char));
+	sprintf(score, "%.3f\n", player.score);
+	fputs(score, fp);
+	
+	free(score);
+	fclose(fp);
+	return 1;
+}
+
+void drawBackdrop() {
+	
+	ALLEGRO_COLOR BKG_COLOR = al_map_rgb(0,76,153);
+	ALLEGRO_COLOR GRASS_COLOR = al_map_rgb(51, 255, 51);
+
+	//desenhando ceu
+	al_draw_filled_rectangle(0, 0,
+							SCREEN_W, SCREEN_H - GRASS_H,
+							BKG_COLOR);	
+	
+	//desenhando grama
+	al_draw_filled_rectangle(0, SCREEN_H - GRASS_H,
+							SCREEN_W, SCREEN_H,
+							GRASS_COLOR);	
+}
+
+void drawScore(ALLEGRO_FONT *font, Player player){
+	char *score = (char*)malloc(10001*sizeof(char));
+	sprintf(score, "%.3f", player.score);
+
+	char *text = (char*)malloc(50*sizeof(char));
+	strcpy(text, "Score: ");
+	strcat(text, score);
+	al_draw_filled_rectangle(0, 0,
+							100, 30,
+							al_map_rgb(0, 0, 0));
+	al_draw_text(font,
+				al_map_rgb(255, 255, 255), 2, 2, ALLEGRO_ALIGN_LEFT,
+				text);
+	free(score);
+	free(text);
+}
+
+void addPointsPlayer(Player *player, int seconds){
+	player->score += getPoints(seconds);
+}
+
+void initPlayer(Player *player) {
+	player->x = SCREEN_W / 2;
+	player->y = (SCREEN_H - GRASS_H / 5) - PLAYER_H;
+	player->balancing = 0;
+	player->color = al_map_rgb(0, 0, 102);//al_map_rgb(25, 0, 51);
+	player->mov_l = 0;
+	player->mov_r = 0;
+	player->speed = 2;
+	player->score = (float)0;
+}
+
+void drawPlayer(Player player) {
+	
+	al_draw_filled_triangle(player.x, player.y, 
+							player.x - PLAYER_W/2, player.y + PLAYER_H,
+							player.x + PLAYER_W/2, player.y + PLAYER_H,
+							player.color);	
+	
+}
+
+void updatePlayer(Player *player) {
+	if(player->mov_l) {
+		if(player->x - player->speed > 0)
+			player->x -= player->speed;
+	}
+	if(player->mov_r) {
+		if(player->x + player->speed < SCREEN_W)
+			player->x += player->speed;
+	}	
+}
+
+void initPlates(Plate *plates) {	
+	printf("\nIniciando pratos\n");
+	int i;
+	for(i=0; i<NUM_PLATES; i++) {
+		float x = 0;
+		if(i%2 == 0){
+			x = (SCREEN_W / 2) + (i/2 * (PLATE_W + SPACE_BETWEEN));
+		}
+		else{
+			x = (SCREEN_W / 2) - ((i/2 + 1) * (PLATE_W + SPACE_BETWEEN));
+		}
+		if (x < PLATE_W || x > SCREEN_W - PLATE_W){
+			printf("\nExcede o tamanho da tela!");
+			printf("\nlimite de %d pratos", i-1);
+			break;
+		}
+
+		printf("\nprato %d - x: %f", i, x);
+		printf("\ntempo para aparecer: %d", getPlateTime(i));
+		plates[i].x = x;
+		plates[i].y = (SCREEN_H - GRASS_H / 5) - STICK_H;
+		plates[i].time_to_show = getPlateTime(i);
+		plates[i].energy = 0;
+		plates[i].color = al_map_rgb(204, 255, 255);
+		plates[i].stick_color = al_map_rgb(51, 25, 0);
+	}
+	printf("\nFinalizando pratos\n");
+}
+
+void drawPlates(Plate *plates){
+	
+	int i;
+	for(i = 0; i<NUM_PLATES; i++){
+		if (plates[i].time_to_show > 0)
+			continue;
+
+		al_draw_filled_rectangle(plates[i].x - STICK_W/2, (SCREEN_H - GRASS_H / 5) - STICK_H,
+								plates[i].x + STICK_W/2, (SCREEN_H - GRASS_H / 5) - PLAYER_H,
+								plates[i].stick_color);
+
+		al_draw_filled_ellipse(plates[i].x, plates[i].y, 
+								PLATE_W, PLATE_H,
+								plates[i].color);
+	}
+}
+
+void updatePlate(Plate *plates, int seconds){
+	int i;
+	for(i = 0; i < NUM_PLATES; i++){
+		if(plates[i].time_to_show <= 0)
+			continue;
+		plates[i].time_to_show--;
+	}
+
+	for(i = 0; i < NUM_PLATES; i++){
+		if(plates[i].time_to_show > 0)
+			continue;	
+
+		if(plates[i].energy + getPoints(seconds) > 1)
+			plates[i].energy = 1;
+		else
+			plates[i].energy += getPoints(seconds);
+	}
+	statusPlate(plates);
+}
+
+void statusPlate(Plate *plates){
+	int i;
+	for(i = 0; i < NUM_PLATES; i++){
+		if(plates[i].time_to_show > 0)
+			continue;
+
+		if(plates[i].energy < 0.3){
+			plates[i].color = al_map_rgb(204, 255, 255);
+		} 
+		if(plates[i].energy >= 0.3 && plates[i].energy < 0.5){
+				plates[i].color = al_map_rgb(255, 102, 102);//warning
+		}
+		if(plates[i].energy >= 0.5 && plates[i].energy < 0.8){
+				plates[i].color = al_map_rgb(255, 51, 51);//warning 2
+		}
+		if(plates[i].energy >= 0.8 && plates[i].energy < 1){
+			plates[i].color = al_map_rgb(153, 0, 0);//danger
+		}
+		if(plates[i].energy >= 1){
+			plates[i].color = al_map_rgb(0, 0, 0);//lose
+			plates[i].y =  (SCREEN_H - GRASS_H / 5) - PLAYER_H;
+		}
+	}
+}
+
+void resetPlates(Plate *plates, Player player){
+	if(player.mov_r != 0 || player.mov_l != 0 || player.balancing == 0)
+		return;
+	
+	ALLEGRO_COLOR original_color_stick = al_map_rgb(51, 25, 0);
+	int i;
+	for(i = 0; i < NUM_PLATES; i++){
+		if(player.x >= plates[i].x - 5 && player.x <= plates[i].x + 5 && plates[i].energy < 1){
+			if(plates[i].energy - (float)RECOVER_ENERGY < 0)
+				plates[i].energy = 0;
+			else 
+				plates[i].energy -= (float)RECOVER_ENERGY;
+
+			ALLEGRO_COLOR success = al_map_rgb(102, 0, 204);
+			plates[i].stick_color = success;
+		}
+	}	
+}
+
+void setDefaultStickColor(Plate *plates){
+	ALLEGRO_COLOR default_color_stick = al_map_rgb(51, 25, 0);
+	int i;
+	for(i = 0; i < NUM_PLATES; i++){
+		plates[i].stick_color = default_color_stick;
+	}
+}
+
+void drawFinalScreen(ALLEGRO_FONT *font, Player player, int is_record){
+	char *score = (char*)malloc(10001*sizeof(char));
+	sprintf(score, "%.3f", player.score);
+	char *text = (char*)malloc(50*sizeof(char));
+
+	if(is_record == 1){			
+		strcpy(text, "Novo recorde: ");
+		strcat(text, score);
+	}
+	else{
+		strcpy(text, "Score final: ");
+		strcat(text, score);
+	}
+	al_draw_filled_rectangle(SCREEN_W/2 - 150, SCREEN_H/2 - 60,
+							SCREEN_W/2 + 150, SCREEN_H/2 + 60,
+							al_map_rgb(0, 0, 0));
+	al_draw_text(font,
+				al_map_rgb(255, 255, 255), SCREEN_W/2 - 100, SCREEN_H/2 - 30, ALLEGRO_ALIGN_LEFT,
+				text);
+
+	al_draw_filled_rectangle(SCREEN_W/2 - 145, SCREEN_H/2 + 20,
+							SCREEN_W/2 - 5, SCREEN_H/2 + 45,
+							al_map_rgb(255, 255, 255));
+	al_draw_text(font,
+				al_map_rgb(0, 0, 0), SCREEN_W/2 - 140, SCREEN_H/2 + 25, ALLEGRO_ALIGN_LEFT,
+				"Sair");
+
+	al_draw_filled_rectangle(SCREEN_W/2+5, SCREEN_H/2 + 20,
+							SCREEN_W/2 + 140, SCREEN_H/2 + 45,
+							al_map_rgb(255, 255, 255));
+	al_draw_text(font,
+				al_map_rgb(0, 0, 0), SCREEN_W/2 + 10, SCREEN_H/2 + 25, ALLEGRO_ALIGN_LEFT,
+				"Jogar novamente");
+	free(text);
+	free(score);
 }
