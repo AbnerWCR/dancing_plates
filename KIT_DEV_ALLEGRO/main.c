@@ -7,6 +7,7 @@
 //#include <stdlib.h>
 
 #define NUM_PLATES 9
+#define RECOVER_ENERGY 0.020
 
 const float FPS = 60;  
 
@@ -15,10 +16,10 @@ const int SCREEN_H = 540;
 
 const int GRASS_H = 150;
 
-const int STICK_W = 5;
-const int STICK_H = 200;
+const int STICK_W = 6;
+const int STICK_H = 250;
 
-const int PLATE_W = 20;
+const int PLATE_W = 25;
 const int PLATE_H = 5;
 const int SPACE_BETWEEN = 40;
 
@@ -136,8 +137,8 @@ void drawPlates(Plate *plates){
 		if (plates[i].time_to_show > 0)
 			continue;
 
-		al_draw_filled_rectangle(plates[i].x, (SCREEN_H - GRASS_H / 5) - STICK_H,
-								plates[i].x + STICK_W, (SCREEN_H - GRASS_H / 5) - PLAYER_H,
+		al_draw_filled_rectangle(plates[i].x - STICK_W/2, (SCREEN_H - GRASS_H / 5) - STICK_H,
+								plates[i].x + STICK_W/2, (SCREEN_H - GRASS_H / 5) - PLAYER_H,
 								plates[i].stick_color);
 
 		al_draw_filled_ellipse(plates[i].x, plates[i].y, 
@@ -228,19 +229,15 @@ void resetPlates(Plate *plates, Player player){
 	int i;
 	for(i = 0; i < NUM_PLATES; i++){
 		if(player.x >= plates[i].x - 5 && player.x <= plates[i].x + 5 && plates[i].energy < 1){
-			if(plates[i].energy - 0.25 < 0)
+			if(plates[i].energy - (float)RECOVER_ENERGY < 0)
 				plates[i].energy = 0;
 			else 
-				plates[i].energy -= 0.25;
+				plates[i].energy -= (float)RECOVER_ENERGY;
 
 			ALLEGRO_COLOR success = al_map_rgb(102, 0, 204);
 			plates[i].stick_color = success;
-		}			
-	}
-	drawPlates(plates);
-	al_flip_display();
-	setDefaultStickColor(plates);
-	al_rest(0.5);
+		}
+	}	
 }
 
 int checkPlates(Plate *plates){
@@ -482,9 +479,10 @@ int main(int argc, char **argv){
 			drawBackdrop();		
 			drawScore(size_12, player);	
 			updatePlayer(&player);			
-			drawPlayer(player);
-			resetPlates(plates, player);	
+			drawPlayer(player);	
+			resetPlates(plates, player);				
 			drawPlates(plates);
+			setDefaultStickColor(plates);
 
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
@@ -546,9 +544,11 @@ int main(int argc, char **argv){
 				playing = player_decision;
 				end_game = player_decision;
 
+				//PLAYER
 				initPlayer(&player);
-	
+
 				//PLATES
+				free(plates);
 				plates = (Plate*)malloc(NUM_PLATES*sizeof(Plate));
 				initPlates(plates);
 
@@ -570,7 +570,7 @@ int main(int argc, char **argv){
 			}
 		}
 	}
-
+	free(plates);
 	al_destroy_timer(timer);
 	al_destroy_display(display);
 	al_destroy_event_queue(event_queue);
