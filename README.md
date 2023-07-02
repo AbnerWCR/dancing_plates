@@ -14,7 +14,7 @@
 - Execute o arquivo plates que será gerado após os passos anteriores serem cumpridos
 
 ### Menu inicial do jogo:
-*imagem*
+![alt text](https://github.com/AbnerWCR/dancing_plates/blob/master/images/menu_inicial.png)
 
 ### Tela em jogo:
-*imagem*
+![alt text](https://github.com/AbnerWCR/dancing_plates/blob/master/images/em_jogo.png)
