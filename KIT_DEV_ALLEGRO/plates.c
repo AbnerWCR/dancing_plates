@@ -88,7 +88,7 @@ int setRecord(Player player);
 
 int drawPowerUp(ALLEGRO_FONT *font, Player player, int seconds, int captured);
 
-int capturePowerUp(Player *player, int power_up, int capturated);
+int capturePowerUp(Player *player, int power_up, int captured);
  
 int main(int argc, char **argv){
 	
@@ -734,8 +734,8 @@ int drawPowerUp(ALLEGRO_FONT *font, Player player, int seconds, int captured){
 	return 0;
 }
 
-int capturePowerUp(Player *player, int power_up, int capturated){
-	if(capturated == 1)
+int capturePowerUp(Player *player, int power_up, int captured){
+	if(captured == 1)
 		return 1;
 
 	if(power_up == 0)
