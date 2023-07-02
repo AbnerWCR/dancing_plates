@@ -375,9 +375,9 @@ float getPoints(int seconds){
 	else if(seconds > 80 && seconds <= 180)
 		points = (float)0.05;
 	else if(seconds > 180 && seconds <= 200)
-		points = (float)0.07;
+		points = (float)0.06;
 	else if(seconds > 200)
-		points = (float)0.073;
+		points = (float)0.065;
 
 	return points;
 }
@@ -397,7 +397,7 @@ int setRecord(Player player){
 	fp = fopen("recorde_jogador.txt", "a+");
 	if(fp == NULL){
 		printf("Erro ao abrir arquivo!");
-		return;
+		return 0;
 	}
 
 	float value = (float)0;
@@ -470,7 +470,7 @@ void initPlayer(Player *player) {
 	player->color = al_map_rgb(0, 0, 102);//al_map_rgb(25, 0, 51);
 	player->mov_l = 0;
 	player->mov_r = 0;
-	player->speed = 2;
+	player->speed = 1;
 	player->score = (float)0;
 }
 
@@ -592,7 +592,7 @@ void resetPlates(Plate *plates, Player player){
 	ALLEGRO_COLOR original_color_stick = al_map_rgb(51, 25, 0);
 	int i;
 	for(i = 0; i < NUM_PLATES; i++){
-		if(player.x >= plates[i].x - 5 && player.x <= plates[i].x + 5 && plates[i].energy < 1){
+		if(player.x >= plates[i].x - (STICK_W/2) && player.x <= plates[i].x + (STICK_W/2) && plates[i].energy < 1){
 			if(plates[i].energy - (float)RECOVER_ENERGY < 0)
 				plates[i].energy = 0;
 			else 
