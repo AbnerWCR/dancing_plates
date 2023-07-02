@@ -85,6 +85,10 @@ void drawFinalScreen(ALLEGRO_FONT *font, Player player, int is_record, int is_wi
 int decision(int x, int y);
 
 int setRecord(Player player);
+
+int drawPowerUp(ALLEGRO_FONT *font, Player player, int seconds, int captured);
+
+int capturePowerUp(Player *player, int power_up, int capturated);
  
 int main(int argc, char **argv){
 	
@@ -211,6 +215,7 @@ int main(int argc, char **argv){
 	//inicia o temporizador
 	al_start_timer(timer);	
 
+	int power_up_captured = 0;
 	int end_game = 1;
 	int i;
 	while(playing) {	
@@ -228,7 +233,6 @@ int main(int argc, char **argv){
 				if(player.score >= 500)
 					is_winner = 1;
 
-				printf("\nCaiu no end_game 0");
 				free(plates);
 				al_stop_timer(timer);
 
@@ -253,16 +257,19 @@ int main(int argc, char **argv){
 			resetPlates(plates, player);				
 			drawPlates(plates);
 			setDefaultStickColor(plates);
+			
+			int seconds = (int)(al_get_timer_count(timer)/FPS);
+			int power_up_on = drawPowerUp(size_14, player, seconds, power_up_captured);
 
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
 			
-			int segundos = (int)(al_get_timer_count(timer)/FPS);
-			addPointsPlayer(&player, segundos);
+			addPointsPlayer(&player, seconds);			
+			power_up_captured = capturePowerUp(&player, power_up_on, power_up_captured);
 
 			if(al_get_timer_count(timer)%(int)FPS == 0){
-				printf("\n%d segundos se passaram...", segundos);
-				updatePlate(plates, segundos);
+				printf("\n%d segundos se passaram...", seconds);
+				updatePlate(plates, seconds);
 			}
 		}
 		//se o tipo de evento for o fechamento da tela (clique no x da janela)
@@ -339,9 +346,9 @@ int main(int argc, char **argv){
 		}
 	}
 
-	free(plates);
-	al_destroy_timer(timer);
+	//free(plates);
 	al_destroy_display(display);
+	al_destroy_timer(timer);
 	al_destroy_event_queue(event_queue);
 	al_destroy_font(size_12);
 	al_destroy_font(size_14);
@@ -371,13 +378,13 @@ float getPoints(int seconds){
 	else if(seconds > 20 && seconds <= 40)
 		points = (float)0.02;
 	else if(seconds > 40 && seconds <= 80)
-		points = (float)0.03;
+		points = (float)0.025;
 	else if(seconds > 80 && seconds <= 180)
-		points = (float)0.05;
+		points = (float)0.03;
 	else if(seconds > 180 && seconds <= 200)
 		points = (float)0.06;
 	else if(seconds > 200)
-		points = (float)0.065;
+		points = (float)0.075;
 
 	return points;
 }
@@ -485,11 +492,11 @@ void drawPlayer(Player player) {
 
 void updatePlayer(Player *player) {
 	if(player->mov_l) {
-		if(player->x - player->speed > 0)
+		if((player->x - PLATE_W/2) - player->speed > 0)
 			player->x -= player->speed;
 	}
 	if(player->mov_r) {
-		if(player->x + player->speed < SCREEN_W)
+		if((player->x + PLATE_W/2) + player->speed < SCREEN_W)
 			player->x += player->speed;
 	}	
 }
@@ -699,4 +706,45 @@ int menu(ALLEGRO_FONT *font){
 	free(text);
 
 	return 1;
+}
+
+int drawPowerUp(ALLEGRO_FONT *font, Player player, int seconds, int captured){
+	if(captured == 1)
+		return 0;
+	
+	if (seconds > 80){
+		char *text = (char*)malloc(50*sizeof(char));
+		strcpy(text, "Power up disponível!");
+
+		al_draw_filled_rectangle(SCREEN_W/2 - 150, 0,
+								SCREEN_W/2 + 150, 120,
+								al_map_rgb(0, 0, 0));
+		al_draw_text(font,
+					al_map_rgb(255, 255, 255), SCREEN_W/2 - 100, 30, ALLEGRO_ALIGN_LEFT,
+					text);
+
+		al_draw_filled_circle(SCREEN_W-60, player.y + PLAYER_H, 10,
+								al_map_rgb(255, 0, 127));
+		
+		free(text);
+
+		return 1;
+	}
+
+	return 0;
+}
+
+int capturePowerUp(Player *player, int power_up, int capturated){
+	if(capturated == 1)
+		return 1;
+
+	if(power_up == 0)
+		return 0;
+	
+	if(player->x + PLAYER_W/2 >= SCREEN_W-60 && player->x - PLAYER_W/2 <= SCREEN_W-60){
+		player->speed = 2;
+		return 1;
+	}
+	
+	return 0;
 }
